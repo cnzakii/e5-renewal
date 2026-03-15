@@ -1,18 +1,12 @@
 services:
   e5-renewal:
-    image: e5-renewal:latest
-    build: .
+    image: ghcr.io/cnzakii/e5-renewal:latest
+    container_name: e5-renewal
     restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/data
-      # 可选 TLS 证书：
-      # - ./certs:/certs:ro
-    environment:
-      - E5_DB_PATH=/data/e5.db
-      - E5_JWT_SECRET=${E5_JWT_SECRET:?E5_JWT_SECRET is required}
-      - E5_PATH_PREFIX=${E5_PATH_PREFIX:-}
-      - E5_ENCRYPTION_KEY=${E5_ENCRYPTION_KEY:-}
-      # - E5_TLS_CERT=/certs/fullchain.pem
-      # - E5_TLS_KEY=/certs/privkey.pem
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+    # environment:
+    #   - E5_PATH_PREFIX=/e5

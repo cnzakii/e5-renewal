@@ -17,7 +17,8 @@ COPY --from=frontend /app/dist ./static/dist/
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /e5-renewal .
 
 # ---- Stage 3: Final minimal image ----
-FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=backend /e5-renewal /e5-renewal
+FROM gcr.io/distroless/static-debian12
+WORKDIR /app
+COPY --from=backend /e5-renewal /app/e5-renewal
 EXPOSE 8080
-ENTRYPOINT ["/e5-renewal"]
+ENTRYPOINT ["/app/e5-renewal"]

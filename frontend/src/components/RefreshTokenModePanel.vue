@@ -186,6 +186,7 @@ function startAutoOAuth() {
     client_id: props.clientId.trim(),
     client_secret: props.clientSecret.trim(),
     tenant_id: props.tenantId.trim(),
+    redirect_uri: autoRedirectUri.value,
   }).then(res => {
     const authorizeUrl = res.data.authorize_url
     oauthPopup = window.open(authorizeUrl, 'e5-oauth', 'width=600,height=700,scrollbars=yes')

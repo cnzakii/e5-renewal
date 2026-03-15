@@ -403,6 +403,7 @@
 import { ref, reactive, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from '../i18n'
 import { apiClient } from '../api/client'
+import { pathPrefix } from '../config'
 import RefreshTokenModePanel from './RefreshTokenModePanel.vue'
 
 export interface AccountFormData {
@@ -559,6 +560,7 @@ function startOAuth() {
     client_id: form.client_id.trim(),
     client_secret: form.client_secret.trim(),
     tenant_id: form.tenant_id.trim(),
+    redirect_uri: `${window.location.origin}${pathPrefix}/api/oauth/callback`,
   }).then(res => {
     const authorizeUrl = res.data.authorize_url
     oauthPopup = window.open(authorizeUrl, 'e5-oauth', 'width=600,height=700,scrollbars=yes')

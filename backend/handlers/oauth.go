@@ -74,33 +74,21 @@ func registerOAuthRoutes(r *gin.Engine, svc *oauth.Service) {
 			ClientID     string `json:"client_id" binding:"required"`
 			ClientSecret string `json:"client_secret"`
 			TenantID     string `json:"tenant_id" binding:"required"`
-			RedirectURI  string `json:"redirect_uri"`
+			RedirectURI  string `json:"redirect_uri" binding:"required"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "client_id and tenant_id required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "client_id, tenant_id, and redirect_uri required"})
 			return
 		}
 
-		var redirectURI string
-		var ttl time.Duration
-
-		if req.RedirectURI != "" {
-			parsed, err := url.Parse(req.RedirectURI)
-			if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid redirect_uri"})
-				return
-			}
-			redirectURI = req.RedirectURI
-			ttl = 15 * time.Minute
-		} else {
-			// Build redirect_uri pointing to this app's callback endpoint
-			scheme := "http"
-			if c.Request.TLS != nil {
-				scheme = "https"
-			}
-			redirectURI = fmt.Sprintf("%s://%s%s/api/oauth/callback", scheme, c.Request.Host, prefix)
-			ttl = 5 * time.Minute
+		parsed, err := url.Parse(req.RedirectURI)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid redirect_uri"})
+			return
 		}
+
+		redirectURI := req.RedirectURI
+		ttl := 5 * time.Minute
 
 		state := oauth.GlobalStateStore.NewState(oauth.OAuthState{
 			ClientID:     req.ClientID,

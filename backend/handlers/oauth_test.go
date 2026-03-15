@@ -102,6 +102,7 @@ func TestOAuthAuthorizeReturnsAuthorizeURL(t *testing.T) {
 		"client_id":     "client-id",
 		"client_secret": "client-secret",
 		"tenant_id":     "tenant-id",
+		"redirect_uri":  "https://example.com/api/oauth/callback",
 	})
 
 	require.Equal(t, http.StatusOK, w.Code)
@@ -126,6 +127,18 @@ func TestOAuthAuthorizeRejectsMissingClientID(t *testing.T) {
 	r := setupOAuthTestRouter(t, nil)
 
 	w := performJSONRequest(t, r, http.MethodPost, "/api/oauth/authorize", map[string]string{
+		"tenant_id": "tenant-id",
+	})
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestOAuthAuthorizeRejectsMissingRedirectURI verifies that redirect_uri is required.
+func TestOAuthAuthorizeRejectsMissingRedirectURI(t *testing.T) {
+	r := setupOAuthTestRouter(t, nil)
+
+	w := performJSONRequest(t, r, http.MethodPost, "/api/oauth/authorize", map[string]string{
+		"client_id": "client-id",
 		"tenant_id": "tenant-id",
 	})
 

@@ -104,7 +104,6 @@ func ApplicationEndpoints() []Endpoint {
 		{Name: "users/{userId}/drive/root/children", Path: "/v1.0/users/{userId}/drive/root/children?$top=1", Scope: "Files.Read.All"},
 		{Name: "users/{userId}/messages", Path: "/v1.0/users/{userId}/messages?$top=1", Scope: "Mail.Read"},
 		{Name: "users/{userId}/mailboxSettings", Path: "/v1.0/users/{userId}/mailboxSettings", Scope: "MailboxSettings.Read"},
-		{Name: "users/{userId}/onenote/notebooks", Path: "/v1.0/users/{userId}/onenote/notebooks?$top=1", Scope: "Notes.Read"},
 		{Name: "groups", Path: "/v1.0/groups?$top=1", Scope: "Group.Read.All"},
 	}
 }

@@ -761,8 +761,8 @@ func TestComputeHealth_Partial(t *testing.T) {
 	ctx := context.Background()
 	account := createTestAccount(t, ctx, "health-partial", models.AuthTypeAuthCode)
 
-	// Health is computed as fraction of task logs with FailCount==0.
-	// Create 2 successful logs (FailCount=0) and 2 failed logs (FailCount>0) → 50% health.
+	// Health is computed as successEp/totalEp across last 20 logs.
+	// Create 2 logs with 5/5 success and 2 logs with 0/5 → 10/20 = 50% health.
 	now := time.Now().UTC()
 	for i := 0; i < 2; i++ {
 		finished := now
@@ -809,8 +809,7 @@ func TestComputeHealth_ZeroEndpoints(t *testing.T) {
 	ctx := context.Background()
 	account := createTestAccount(t, ctx, "health-zero-ep", models.AuthTypeAuthCode)
 
-	// A task log with TotalEndpoints=0 and FailCount=0 counts as a fully successful run.
-	// Health = 1/1 * 100 = 100 (all runs have FailCount==0).
+	// A task log with TotalEndpoints=0 means no request data → health = -1.
 	now := time.Now().UTC()
 	finished := now
 	tl := models.TaskLog{
@@ -830,9 +829,9 @@ func TestComputeHealth_ZeroEndpoints(t *testing.T) {
 	sched.Start(ctx)
 	defer sched.Stop()
 
-	// FailCount == 0 → counted as success → health = 100%
+	// TotalEndpoints == 0 → no request data → health = -1
 	health := sched.ComputeHealth(account.ID)
-	assert.InDelta(t, 100.0, health, 0.1)
+	assert.Equal(t, float64(-1), health)
 }
 
 // --------------- checkAuthExpiry tests ---------------

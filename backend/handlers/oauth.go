@@ -44,11 +44,13 @@ func registerOAuthRoutes(r *gin.Engine, svc *oauth.Service) {
 			return
 		}
 
+		origin := originFromRedirectURI(stateData.RedirectURI, c)
+
 		tokenResp, err := svc.ExchangeAuthCode(c.Request.Context(),
 			stateData.TenantID, stateData.ClientID, stateData.ClientSecret,
 			code, stateData.RedirectURI, delegatedScope())
 		if err != nil {
-			c.Data(http.StatusBadRequest, "text/html", oauthResultHTML("error", err.Error(), requestOrigin(c)))
+			c.Data(http.StatusBadRequest, "text/html", oauthResultHTML("error", err.Error(), origin))
 			return
 		}
 
@@ -58,10 +60,10 @@ func registerOAuthRoutes(r *gin.Engine, svc *oauth.Service) {
 			"access_token":  tokenResp.AccessToken,
 		})
 		if err != nil {
-			c.Data(http.StatusInternalServerError, "text/html", oauthResultHTML("error", "internal error", requestOrigin(c)))
+			c.Data(http.StatusInternalServerError, "text/html", oauthResultHTML("error", "internal error", origin))
 			return
 		}
-		c.Data(http.StatusOK, "text/html", oauthResultHTML("success", string(tokenJSON), requestOrigin(c)))
+		c.Data(http.StatusOK, "text/html", oauthResultHTML("success", string(tokenJSON), origin))
 	})
 
 	// Auth-protected OAuth routes
@@ -147,6 +149,16 @@ func registerOAuthRoutes(r *gin.Engine, svc *oauth.Service) {
 			"access_token":  tokenResp.AccessToken,
 		})
 	})
+}
+
+// originFromRedirectURI extracts the origin (scheme://host) from the stored
+// redirect_uri, which reflects the real user-facing scheme even behind a
+// reverse proxy. Falls back to requestOrigin if parsing fails.
+func originFromRedirectURI(redirectURI string, c *gin.Context) string {
+	if parsed, err := url.Parse(redirectURI); err == nil && parsed.Host != "" {
+		return parsed.Scheme + "://" + parsed.Host
+	}
+	return requestOrigin(c)
 }
 
 // requestOrigin derives the origin (scheme://host) from the incoming request.

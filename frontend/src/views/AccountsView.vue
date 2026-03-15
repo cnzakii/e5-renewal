@@ -14,8 +14,49 @@
       </button>
     </div>
 
+    <!-- Skeleton Loading -->
+    <div v-if="accountsLoading && !accounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div
+        v-for="i in 3"
+        :key="'skeleton-' + i"
+        :class="['glass-card p-5 space-y-4 stagger-item', `stagger-${i}`]"
+      >
+        <!-- Name + badge skeleton -->
+        <div class="flex items-start justify-between">
+          <div class="space-y-2 flex-1">
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-5 rounded-lg skeleton-shimmer"></div>
+              <div class="w-28 h-5 rounded-lg skeleton-shimmer"></div>
+            </div>
+            <div class="w-20 h-4 rounded-md skeleton-shimmer"></div>
+          </div>
+          <div class="flex gap-1">
+            <div class="w-7 h-7 rounded-lg skeleton-shimmer"></div>
+            <div class="w-7 h-7 rounded-lg skeleton-shimmer"></div>
+          </div>
+        </div>
+        <!-- Health bar skeleton -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between">
+            <div class="w-12 h-3 rounded skeleton-shimmer"></div>
+            <div class="w-10 h-4 rounded skeleton-shimmer"></div>
+          </div>
+          <div class="w-full h-1.5 rounded-full skeleton-shimmer"></div>
+        </div>
+        <!-- Stats row skeleton -->
+        <div class="w-full h-10 rounded-xl skeleton-shimmer"></div>
+        <!-- Expiry skeleton -->
+        <div class="w-full h-9 rounded-xl skeleton-shimmer"></div>
+        <!-- Bottom tiles skeleton -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="h-[76px] rounded-xl skeleton-shimmer"></div>
+          <div class="h-[76px] rounded-xl skeleton-shimmer"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Card Grid -->
-    <div v-if="accounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div v-else-if="accounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
         v-for="(acc, i) in accounts"
         :key="acc.id"
@@ -274,6 +315,7 @@ const route = useRoute()
 const router = useRouter()
 
 const accounts = ref<Account[]>([])
+const accountsLoading = ref(true)
 const showFormDialog = ref(false)
 const editingAccount = ref<Account | null>(null)
 const showDeleteDialog = ref(false)
@@ -368,11 +410,14 @@ async function triggerAccount(acc: Account) {
 }
 
 async function fetchAccounts() {
+  accountsLoading.value = true
   try {
     const res = await apiClient.get('/accounts')
     accounts.value = res.data
   } catch {
     // keep current data on error
+  } finally {
+    accountsLoading.value = false
   }
 }
 

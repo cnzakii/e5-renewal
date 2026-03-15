@@ -303,13 +303,15 @@ func (s *Scheduler) computeHealth(ctx context.Context, accountID uint) float64 {
 	if err != nil || len(logs) == 0 {
 		return -1
 	}
-	success := 0
+	var totalEp, successEp int
 	for i := range logs {
-		if logs[i].FailCount == 0 {
-			success++
-		}
+		totalEp += logs[i].TotalEndpoints
+		successEp += logs[i].SuccessCount
 	}
-	return float64(success) / float64(len(logs)) * 100
+	if totalEp == 0 {
+		return -1
+	}
+	return float64(successEp) / float64(totalEp) * 100
 }
 
 func (s *Scheduler) authExpiryLoop(ctx context.Context) {

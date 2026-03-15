@@ -71,21 +71,6 @@
       <div class="lg:col-span-3 glass-card glass-card-hover p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('dashboard.chart.trend') }}</h3>
-          <div class="flex gap-1 p-0.5 rounded-lg bg-gray-100/60 dark:bg-white/6">
-            <button
-              v-for="v in trendViews"
-              :key="v.value"
-              :class="[
-                'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200',
-                trendView === v.value
-                  ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-              ]"
-              @click="switchTrendView(v.value)"
-            >
-              {{ t(v.label) }}
-            </button>
-          </div>
         </div>
         <v-chart ref="trendChartRef" :option="trendOption" autoresize style="width: 100%; height: 256px;" />
       </div>
@@ -229,10 +214,7 @@ interface AccountHealth {
 
 interface TrendItem {
   date: string
-  success: number
-  failure: number
-  auth_code_runs: number
-  credentials_runs: number
+  total_requests: number
 }
 
 interface RecentRun {
@@ -288,7 +270,6 @@ const data = ref<DashboardData>({
   total_schedules: 0,
   avg_health: 0,
 })
-const trendView = ref<'status' | 'authType'>('status')
 const trendChartRef = ref<InstanceType<typeof VChart> | null>(null)
 
 const periods = [
@@ -298,18 +279,9 @@ const periods = [
   { value: 'all', label: 'dashboard.period.all' },
 ]
 
-const trendViews = [
-  { value: 'status' as const, label: 'dashboard.chart.byStatus' },
-  { value: 'authType' as const, label: 'dashboard.chart.byAuthType' },
-]
-
 function switchPeriod(p: string) {
   period.value = p
   fetchData()
-}
-
-function switchTrendView(v: 'status' | 'authType') {
-  trendView.value = v
 }
 
 const refreshDone = ref(false)
@@ -507,53 +479,24 @@ const tooltipStyle = computed(() => ({
   extraCssText: 'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);',
 }))
 
-const trendOption = computed(() => {
-  const base = {
-    tooltip: { trigger: 'axis' as const, formatter: tooltipFormatter, ...tooltipStyle.value },
-    grid: { left: 40, right: 16, top: 18, bottom: 64 },
-    xAxis: {
-      type: 'category' as const,
-      data: data.value.trend.map(d => d.date),
-      axisLabel: { color: textColor.value, fontSize: 11 },
-      axisLine: { lineStyle: { color: isDark.value ? '#333' : '#e5e7eb' } },
-    },
-    yAxis: {
-      type: 'value' as const,
-      axisLabel: { color: textColor.value, fontSize: 11 },
-      splitLine: { lineStyle: { color: isDark.value ? '#222' : '#f0f0f0' } },
-    },
-  }
-
-  if (trendView.value === 'authType') {
-    return {
-      ...base,
-      legend: {
-        data: [t('dashboard.auth.authCode'), t('dashboard.auth.credentials')],
-        textStyle: { color: textColor.value },
-        bottom: 4,
-        itemGap: 20,
-      },
-      series: [
-        { name: t('dashboard.auth.authCode'), type: 'line', stack: 'total', data: data.value.trend.map(d => d.auth_code_runs), smooth: true, symbolSize: 4, itemStyle: { color: '#3b82f6' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.3)' }, { offset: 1, color: 'rgba(59,130,246,0.02)' }] } } },
-        { name: t('dashboard.auth.credentials'), type: 'line', stack: 'total', data: data.value.trend.map(d => d.credentials_runs), smooth: true, symbolSize: 4, itemStyle: { color: '#f59e0b' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(245,158,11,0.3)' }, { offset: 1, color: 'rgba(245,158,11,0.02)' }] } } },
-      ],
-    }
-  }
-
-  return {
-    ...base,
-    legend: {
-      data: [t('dashboard.chart.success'), t('dashboard.chart.failure')],
-      textStyle: { color: textColor.value },
-      bottom: 4,
-      itemGap: 20,
-    },
-    series: [
-      { name: t('dashboard.chart.success'), type: 'line', data: data.value.trend.map(d => d.success), smooth: true, symbolSize: 6, itemStyle: { color: '#10b981' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(16,185,129,0.25)' }, { offset: 1, color: 'rgba(16,185,129,0.02)' }] } } },
-      { name: t('dashboard.chart.failure'), type: 'line', data: data.value.trend.map(d => d.failure), smooth: true, symbolSize: 6, itemStyle: { color: '#ef4444' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(239,68,68,0.2)' }, { offset: 1, color: 'rgba(239,68,68,0.02)' }] } } },
-    ],
-  }
-})
+const trendOption = computed(() => ({
+  tooltip: { trigger: 'axis' as const, formatter: tooltipFormatter, ...tooltipStyle.value },
+  grid: { left: 40, right: 16, top: 18, bottom: 24 },
+  xAxis: {
+    type: 'category' as const,
+    data: data.value.trend.map(d => d.date),
+    axisLabel: { color: textColor.value, fontSize: 11 },
+    axisLine: { lineStyle: { color: isDark.value ? '#333' : '#e5e7eb' } },
+  },
+  yAxis: {
+    type: 'value' as const,
+    axisLabel: { color: textColor.value, fontSize: 11 },
+    splitLine: { lineStyle: { color: isDark.value ? '#222' : '#f0f0f0' } },
+  },
+  series: [
+    { name: t('dashboard.chart.totalRequests'), type: 'line', data: data.value.trend.map(d => d.total_requests), smooth: true, symbolSize: 6, itemStyle: { color: '#3b82f6' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.25)' }, { offset: 1, color: 'rgba(59,130,246,0.02)' }] } } },
+  ],
+}))
 </script>
 
 <style scoped>

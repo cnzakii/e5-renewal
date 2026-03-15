@@ -65,11 +65,8 @@ func dashboardSummaryHandler() gin.HandlerFunc {
 // --- Trend ---
 
 type dashboardTrendItem struct {
-	Date            string `json:"date"`
-	Success         int    `json:"success"`
-	Failure         int    `json:"failure"`
-	AuthCodeRuns    int    `json:"auth_code_runs"`
-	CredentialsRuns int    `json:"credentials_runs"`
+	Date          string `json:"date"`
+	TotalRequests int    `json:"total_requests"`
 }
 
 func dashboardTrendHandler() gin.HandlerFunc {
@@ -77,13 +74,7 @@ func dashboardTrendHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		period := c.DefaultQuery("period", "7d")
 
-		accounts, _ := database.Accounts.List(ctx)
-		accountAuthType := make(map[uint]string, len(accounts))
-		for _, a := range accounts {
-			accountAuthType[a.ID] = a.AuthType
-		}
-
-		trend := buildTrend(ctx, accountAuthType, period, time.Now().UTC())
+		trend := buildTrend(ctx, period, time.Now().UTC())
 		c.JSON(http.StatusOK, trend)
 	}
 }
@@ -149,7 +140,7 @@ func parsePeriod(c *gin.Context) time.Time {
 	}
 }
 
-func buildTrend(ctx context.Context, accountAuthType map[uint]string, period string, now time.Time) []dashboardTrendItem {
+func buildTrend(ctx context.Context, period string, now time.Time) []dashboardTrendItem {
 	type bucket struct {
 		label string
 		start time.Time
@@ -185,16 +176,7 @@ func buildTrend(ctx context.Context, accountAuthType map[uint]string, period str
 		logs, _ := database.TaskLogs.FindInTimeRange(ctx, b.start, b.end)
 		item := dashboardTrendItem{Date: b.label}
 		for i := range logs {
-			if logs[i].FailCount == 0 {
-				item.Success++
-			} else {
-				item.Failure++
-			}
-			if accountAuthType[logs[i].AccountID] == models.AuthTypeAuthCode {
-				item.AuthCodeRuns++
-			} else {
-				item.CredentialsRuns++
-			}
+			item.TotalRequests += logs[i].TotalEndpoints
 		}
 		result = append(result, item)
 	}

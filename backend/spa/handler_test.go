@@ -122,11 +122,22 @@ func TestSPA_RootPath(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "<html>")
 }
 
-func TestSPA_WithPrefix_RootPath(t *testing.T) {
+func TestSPA_WithPrefix_RedirectToTrailingSlash(t *testing.T) {
 	r := setupSPAEngine("/app", "")
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/app", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+	assert.Equal(t, "/app/", w.Header().Get("Location"))
+}
+
+func TestSPA_WithPrefix_TrailingSlash(t *testing.T) {
+	r := setupSPAEngine("/app", "")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/app/", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)

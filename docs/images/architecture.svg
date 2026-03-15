@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" font-family="-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B9EFF"/>
+      <stop offset="100%" stop-color="#0071E3"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f0f4f8"/>
+    </linearGradient>
+    <filter id="s1">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#0071E3" flood-opacity="0.12"/>
+    </filter>
+    <filter id="s2">
+      <feDropShadow dx="0" dy="1" stdDeviation="4" flood-color="#000" flood-opacity="0.05"/>
+    </filter>
+    <!-- Dot pattern -->
+    <pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.8" fill="#0071E3" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="500" fill="url(#bg)"/>
+  <rect width="900" height="500" fill="url(#dots)"/>
+
+  <!-- ═══ Decorative circles behind center ═══ -->
+  <circle cx="340" cy="250" r="160" fill="none" stroke="#0071E3" stroke-width="0.5" opacity="0.08"/>
+  <circle cx="340" cy="250" r="120" fill="none" stroke="#0071E3" stroke-width="0.5" opacity="0.05"/>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--              CENTER HUB                -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <!-- Go Backend — center -->
+  <g transform="translate(340,250)" filter="url(#s1)">
+    <rect x="-90" y="-48" width="180" height="96" rx="20" fill="url(#brand)"/>
+    <!-- Subtle shine -->
+    <rect x="-90" y="-48" width="180" height="48" rx="20" fill="white" opacity="0.1"/>
+    <text x="0" y="-8" text-anchor="middle" font-size="15" font-weight="700" fill="white" letter-spacing="0.5">Go Backend</text>
+    <text x="0" y="14" text-anchor="middle" font-size="10" fill="white" opacity="0.7">Gin · GORM · JWT</text>
+    <text x="0" y="30" text-anchor="middle" font-size="10" fill="white" opacity="0.7">AES-GCM</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--             INNER RING                 -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <!-- Vue SPA — top -->
+  <g transform="translate(340,80)" filter="url(#s2)">
+    <rect x="-82" y="-36" width="164" height="72" rx="16" fill="white" stroke="#0071E3" stroke-width="1.5"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="13" font-weight="600" fill="#0071E3">Vue 3 SPA</text>
+    <text x="0" y="16" text-anchor="middle" font-size="9.5" fill="#86868B">TypeScript · Tailwind</text>
+  </g>
+
+  <!-- Scheduler — bottom left -->
+  <g transform="translate(200,400)" filter="url(#s2)">
+    <rect x="-66" y="-32" width="132" height="64" rx="16" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="0" y="-2" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2937">Scheduler</text>
+    <text x="0" y="16" text-anchor="middle" font-size="9.5" fill="#86868B">Random Interval</text>
+  </g>
+
+  <!-- SQLite — bottom right -->
+  <g transform="translate(480,400)" filter="url(#s2)">
+    <rect x="-60" y="-32" width="120" height="64" rx="16" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="0" y="-2" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2937">SQLite</text>
+    <text x="0" y="16" text-anchor="middle" font-size="9.5" fill="#86868B">Encrypted Store</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--           EXTERNAL SERVICES            -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <!-- Browser — far left -->
+  <g transform="translate(80,170)" filter="url(#s2)">
+    <rect x="-56" y="-32" width="112" height="64" rx="16" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="17" fill="#86868B">🌐</text>
+    <text x="0" y="16" text-anchor="middle" font-size="11" font-weight="600" fill="#1f2937">Browser</text>
+  </g>
+
+  <!-- Microsoft Identity — right top -->
+  <g transform="translate(700,120)" filter="url(#s2)">
+    <rect x="-100" y="-36" width="200" height="72" rx="16" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <rect x="-100" y="-36" width="200" height="36" rx="16" fill="#0071E3" fill-opacity="0.04"/>
+    <rect x="-100" y="-18" width="200" height="18" fill="#0071E3" fill-opacity="0.04"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Microsoft Identity</text>
+    <text x="0" y="16" text-anchor="middle" font-size="10" fill="#86868B">OAuth 2.0 Platform</text>
+  </g>
+
+  <!-- Microsoft Graph — right middle -->
+  <g transform="translate(700,250)" filter="url(#s2)">
+    <rect x="-100" y="-36" width="200" height="72" rx="16" fill="white" stroke="#0071E3" stroke-width="1.2" stroke-opacity="0.4"/>
+    <rect x="-100" y="-36" width="200" height="36" rx="16" fill="#0071E3" fill-opacity="0.04"/>
+    <rect x="-100" y="-18" width="200" height="18" fill="#0071E3" fill-opacity="0.04"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Microsoft Graph</text>
+    <text x="0" y="16" text-anchor="middle" font-size="10" fill="#86868B">REST API</text>
+  </g>
+
+  <!-- Push Notification — right bottom -->
+  <g transform="translate(700,380)" filter="url(#s2)">
+    <rect x="-100" y="-36" width="200" height="72" rx="16" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="0" y="-4" text-anchor="middle" font-size="12" font-weight="600" fill="#1f2937">Push Notification</text>
+    <text x="0" y="16" text-anchor="middle" font-size="10" fill="#86868B">Shoutrrr</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--              CONNECTIONS               -->
+  <!-- ═══════════════════════════════════════ -->
+  <defs>
+    <marker id="ab" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+      <path d="M0,0.5 L5.5,2.5 L0,4.5" fill="none" stroke="#0071E3" stroke-width="1"/>
+    </marker>
+    <marker id="ag" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+      <path d="M0,0.5 L5.5,2.5 L0,4.5" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    </marker>
+  </defs>
+
+  <!-- Browser → Vue SPA -->
+  <path d="M130,158 Q200,90 256,82" fill="none" stroke="#0071E3" stroke-width="1.5" marker-end="url(#ab)" opacity="0.7"/>
+  <text x="172" y="108" font-size="9" fill="#86868B" font-weight="500">HTTP</text>
+
+  <!-- Vue SPA → Go Backend -->
+  <line x1="340" y1="116" x2="340" y2="198" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ag)" stroke-dasharray="4,3"/>
+  <text x="354" y="162" font-size="9" fill="#86868B" font-weight="500">REST API</text>
+
+  <!-- Go Backend → Microsoft Identity -->
+  <path d="M432,222 Q520,150 598,124" fill="none" stroke="#0071E3" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="502" y="156" font-size="9" fill="#86868B" font-weight="500">OAuth 2.0</text>
+
+  <!-- Go Backend → Microsoft Graph -->
+  <line x1="432" y1="250" x2="598" y2="250" stroke="#0071E3" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="515" y="242" font-size="9" fill="#86868B" font-weight="500">API Call</text>
+
+  <!-- Go Backend → Push -->
+  <path d="M420,296 Q520,360 598,378" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ag)" opacity="0.6"/>
+  <text x="505" y="348" font-size="9" fill="#86868B" font-weight="500">Alert</text>
+
+  <!-- Go Backend → SQLite -->
+  <path d="M380,298 Q420,350 456,368" fill="none" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ag)"/>
+
+  <!-- Scheduler → Go Backend -->
+  <path d="M240,372 Q280,320 310,300" fill="none" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ag)"/>
+
+  <!-- Scheduler → Graph (dashed) -->
+  <path d="M266,388 Q500,420 650,300" fill="none" stroke="#0071E3" stroke-width="1" stroke-dasharray="4,4" marker-end="url(#ab)" opacity="0.4"/>
+  <text x="470" y="398" font-size="9" fill="#86868B" font-weight="500">Trigger</text>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--              FOOTER LABELS             -->
+  <!-- ═══════════════════════════════════════ -->
+  <g transform="translate(32,460)">
+    <rect x="0" y="-4" width="8" height="8" rx="2" fill="url(#brand)"/>
+    <text x="14" y="4" font-size="9.5" fill="#64748b">Core Service</text>
+    <rect x="110" y="-4" width="8" height="8" rx="2" fill="white" stroke="#0071E3" stroke-width="1.2"/>
+    <text x="124" y="4" font-size="9.5" fill="#64748b">Internal Component</text>
+    <rect x="262" y="-4" width="8" height="8" rx="2" fill="white" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="276" y="4" font-size="9.5" fill="#64748b">External Service</text>
+    <line x1="400" y1="0" x2="430" y2="0" stroke="#0071E3" stroke-width="1.5"/>
+    <text x="436" y="4" font-size="9.5" fill="#64748b">Primary Flow</text>
+    <line x1="530" y1="0" x2="560" y2="0" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <text x="566" y="4" font-size="9.5" fill="#64748b">Secondary Flow</text>
+  </g>
+</svg>

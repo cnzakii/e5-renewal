@@ -32,6 +32,12 @@ func RegisterSPA(r *gin.Engine, prefix string, embeddedFS fs.FS, pathPrefix stri
 			return
 		}
 
+		// Redirect /prefix to /prefix/ so relative asset paths resolve correctly
+		if prefix != "" && urlPath == prefix {
+			c.Redirect(http.StatusMovedPermanently, prefix+"/")
+			return
+		}
+
 		// Try to serve static assets directly (/assets/xxx.js etc.)
 		// Strip the prefix from the path
 		filePath := strings.TrimPrefix(urlPath, prefix)

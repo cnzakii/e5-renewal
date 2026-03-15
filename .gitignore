@@ -1,0 +1,60 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+
+# Go
+bin/
+*.test
+*.out
+*.prof
+cover.out
+coverage.out
+coverage.html
+coverage/
+
+# Go workspace/cache (local)
+.gocache/
+
+# Node / frontend
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# Build artifacts
+dist/
+build/
+tmp/
+!backend/static/dist/
+
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+
+# JetBrains specific
+out/
+
+# SQLite / runtime data
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Go embed static files (populated by Docker build)
+backend/static/dist/*
+!backend/static/dist/.gitkeep

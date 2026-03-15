@@ -137,6 +137,7 @@ describe('AccountFormDialog OAuth UX', () => {
       client_id: 'client-123',
       client_secret: 'secret-123',
       tenant_id: 'tenant-123',
+      redirect_uri: `${window.location.origin}/api/oauth/callback`,
     })
   })
 

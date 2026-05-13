@@ -58,7 +58,7 @@
 docker run -d \
   --name e5-renewal \
   -p 8080:8080 \
-  -v ./data:/data \
+  -v ./data:/app/data \
   -e E5_JWT_SECRET=$(openssl rand -hex 32) \
   -e E5_ENCRYPTION_KEY=$(openssl rand -hex 16) \
   ghcr.io/cnzakii/e5-renewal:latest
@@ -99,7 +99,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/data
+      - ./data:/app/data
     env_file:
       - .env
 ```

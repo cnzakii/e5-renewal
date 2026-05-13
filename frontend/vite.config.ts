@@ -8,22 +8,6 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: './',
   plugins: [vue(), tailwindcss()],
-  build: {
-    rolldownOptions: {
-      output: {
-        codeSplitting: {
-          groups: [
-            {
-              name: 'charts',
-              test: /node_modules[\\/](echarts|zrender|vue-echarts)[\\/]/,
-              maxSize: 250000,
-              priority: 20,
-            },
-          ],
-        },
-      },
-    },
-  },
   // @ts-expect-error vitest config is accepted by Vite
   test: {
     environment: 'jsdom',

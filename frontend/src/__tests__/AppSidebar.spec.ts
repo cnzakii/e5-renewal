@@ -1,13 +1,13 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import AppSidebar from '../components/AppSidebar.vue'
 import { useAuth } from '../stores/auth'
 import { THEME_STORAGE_KEY } from '../utils/theme'
 
-function makeRouter(initialRoute = '/dashboard') {
+function makeRouter(initialRoute = '/dashboard', base = '') {
   const router = createRouter({
-    history: createMemoryHistory(),
+    history: createMemoryHistory(base),
     routes: [
       { path: '/dashboard', component: { template: '<div>Dashboard</div>' } },
       { path: '/accounts', component: { template: '<div>Accounts</div>' } },
@@ -43,6 +43,39 @@ describe('AppSidebar', () => {
     expect(wrapper.find('[data-testid="app-logo"]').exists()).toBe(true)
     // Should NOT have the old inline E5 text badge
     expect(wrapper.find('.bg-apple-blue.rounded-lg').exists()).toBe(false)
+  })
+
+  it('links the brand logo and Renewal text to dashboard', async () => {
+    const router = makeRouter('/logs')
+    await router.isReady()
+
+    const wrapper = mount(AppSidebar, {
+      props: { collapsed: false },
+      global: {
+        plugins: [router],
+      },
+    })
+
+    const brandLink = wrapper.find('[data-test="brand-dashboard-link"]')
+    expect(brandLink.exists()).toBe(true)
+    expect(brandLink.attributes('href')).toBe('/dashboard')
+    await brandLink.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/dashboard')
+  })
+
+  it('lets router history apply a deployment base to the brand link href', async () => {
+    const router = makeRouter('/logs', '/app')
+    await router.isReady()
+
+    const wrapper = mount(AppSidebar, {
+      props: { collapsed: false },
+      global: {
+        plugins: [router],
+      },
+    })
+
+    expect(wrapper.find('[data-test="brand-dashboard-link"]').attributes('href')).toBe('/app/dashboard')
   })
 
   it('renders navigation links for dashboard, accounts, logs, settings', async () => {

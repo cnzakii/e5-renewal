@@ -47,7 +47,7 @@ withDefaults(defineProps<{
 }
 
 .logo-svg {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
   filter: drop-shadow(0 4px 12px rgba(0, 113, 227, 0.25));
   flex-shrink: 0;
 }

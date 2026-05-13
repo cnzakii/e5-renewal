@@ -7,7 +7,11 @@
     ]"
   >
     <!-- Logo -->
-    <div class="flex items-center gap-3 px-4 h-16 shrink-0">
+    <router-link
+      data-test="brand-dashboard-link"
+      to="/dashboard"
+      class="flex items-center gap-3 px-4 h-16 shrink-0 no-underline rounded-none cursor-pointer hover:bg-gray-100/40 dark:hover:bg-white/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-apple-blue/40 transition-colors duration-150"
+    >
       <AppLogo :size="32" />
       <span
         :class="[
@@ -15,7 +19,7 @@
           props.collapsed ? 'max-w-0 opacity-0' : 'max-w-[120px] opacity-100'
         ]"
       >Renewal</span>
-    </div>
+    </router-link>
 
     <!-- Nav Items -->
     <nav class="flex-1 px-2 py-4 space-y-1">
@@ -133,7 +137,6 @@ const { t, toggleLocale, localeLabel } = useI18n()
 const props = defineProps<{ collapsed: boolean }>()
 const emit = defineEmits<{ 'update:collapsed': [value: boolean] }>()
 
-const prefix = import.meta.env.VITE_PATH_PREFIX || ''
 const isDark = useDark({ storageKey: 'e5-theme' })
 const toggleDark = useToggle(isDark)
 
@@ -143,7 +146,7 @@ function isActive(path: string) {
 
 function handleLogout() {
   clearAuth()
-  router.push(`${prefix}/login`)
+  router.push('/login')
 }
 
 // Icon components
@@ -169,9 +172,9 @@ const IconSettings: FunctionalComponent = () =>
   ])
 
 const navItems = computed(() => [
-  { path: `${prefix}/dashboard`, label: 'nav.dashboard', icon: IconDashboard },
-  { path: `${prefix}/accounts`, label: 'nav.accounts', icon: IconAccounts },
-  { path: `${prefix}/logs`, label: 'nav.logs', icon: IconLogs },
-  { path: `${prefix}/settings`, label: 'nav.settings', icon: IconSettings },
+  { path: '/dashboard', label: 'nav.dashboard', icon: IconDashboard },
+  { path: '/accounts', label: 'nav.accounts', icon: IconAccounts },
+  { path: '/logs', label: 'nav.logs', icon: IconLogs },
+  { path: '/settings', label: 'nav.settings', icon: IconSettings },
 ])
 </script>

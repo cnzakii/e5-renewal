@@ -1,14 +1,30 @@
 import { defineConfig } from 'vite'
-// @ts-ignore
+// @ts-expect-error vite plugin types are resolved by Vite at runtime
 import vue from '@vitejs/plugin-vue'
-// @ts-ignore
+// @ts-expect-error vite plugin types are resolved by Vite at runtime
 import tailwindcss from '@tailwindcss/vite'
 
 
 export default defineConfig({
   base: './',
   plugins: [vue(), tailwindcss()],
-  // @ts-ignore
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'charts',
+              test: /node_modules[\\/](echarts|zrender|vue-echarts)[\\/]/,
+              maxSize: 250000,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
+  },
+  // @ts-expect-error vitest config is accepted by Vite
   test: {
     environment: 'jsdom',
     globals: true,

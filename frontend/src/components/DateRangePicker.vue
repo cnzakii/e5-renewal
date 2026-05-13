@@ -23,11 +23,11 @@
     <Transition name="calendar-pop">
       <div
         v-if="open"
+        ref="overlayRef"
         class="fixed inset-0 z-[9999] outline-none"
+        tabindex="-1"
         @click.self="close"
         @keydown.esc="close"
-        tabindex="-1"
-        ref="overlayRef"
       >
         <div
           ref="panelRef"
@@ -304,7 +304,7 @@ function onDayClick() {
 
 /* Transition */
 .calendar-pop-enter-active {
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.16s ease-out;
 }
 .calendar-pop-leave-active {
   transition: all 0.12s ease;

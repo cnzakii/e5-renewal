@@ -323,16 +323,15 @@ describe('LogsView', () => {
     }
   })
 
-  it('ID search input triggers filter', async () => {
+  it('ID search input triggers debounced filter', async () => {
     mockFetch()
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const initialCallCount = vi.mocked(apiClient.get).mock.calls.length
-
     const idInput = wrapper.find('input')
     await idInput.setValue('100')
     await idInput.trigger('input')
+    await new Promise(resolve => setTimeout(resolve, 350))
     await flushPromises()
 
     const logCalls = vi.mocked(apiClient.get).mock.calls.filter(c => c[0] === '/logs')
@@ -375,6 +374,77 @@ describe('LogsView', () => {
         params: expect.objectContaining({ page: 2 }),
       }))
     }
+  })
+
+  it('uses table pagination with direct page input and page size changes', async () => {
+    const manyItems = Array.from({ length: 123 }, (_, i) => ({
+      ...mockLogs.items[0],
+      id: 200 + i,
+      account_name: `Account ${i}`,
+    }))
+    vi.mocked(apiClient.get).mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => {
+      if (url === '/logs') {
+        const params = config?.params || {}
+        const pageSize = Number(params.page_size || 20)
+        const page = Number(params.page || 1)
+        const start = (page - 1) * pageSize
+        return Promise.resolve({ data: { items: manyItems.slice(start, start + pageSize), total: manyItems.length } })
+      }
+      if (url === '/accounts') return Promise.resolve({ data: mockAccountsList })
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = shallowMount(LogsView, mountOptions)
+    await flushPromises()
+
+    await wrapper.find('[data-test="last-page"]').trigger('click')
+    await flushPromises()
+    let logCalls = vi.mocked(apiClient.get).mock.calls.filter(c => c[0] === '/logs')
+    expect(logCalls[logCalls.length - 1][1]).toEqual(expect.objectContaining({
+      params: expect.objectContaining({ page: 7, page_size: 20 }),
+    }))
+    expect(wrapper.find('[data-test="page-position-form"]').text()).toContain('/ 7')
+    expect((wrapper.find('[data-test="page-jump-input"]').element as HTMLInputElement).value).toBe('7')
+    expect(wrapper.find('[data-test="page-number"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="row-jump-input"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="page-jump-input"]').setValue('3')
+    await wrapper.find('[data-test="page-position-form"]').trigger('submit')
+    await flushPromises()
+    logCalls = vi.mocked(apiClient.get).mock.calls.filter(c => c[0] === '/logs')
+    expect(logCalls[logCalls.length - 1][1]).toEqual(expect.objectContaining({
+      params: expect.objectContaining({ page: 3, page_size: 20 }),
+    }))
+    expect((wrapper.find('[data-test="page-jump-input"]').element as HTMLInputElement).value).toBe('3')
+
+    await wrapper.find('[data-test="page-size-select"]').setValue('50')
+    await flushPromises()
+    logCalls = vi.mocked(apiClient.get).mock.calls.filter(c => c[0] === '/logs')
+    expect(logCalls[logCalls.length - 1][1]).toEqual(expect.objectContaining({
+      params: expect.objectContaining({ page: 1, page_size: 50 }),
+    }))
+    expect(wrapper.find('[data-test="page-position-form"]').text()).toContain('/ 3')
+    expect((wrapper.find('[data-test="page-jump-input"]').element as HTMLInputElement).value).toBe('1')
+  })
+
+  it('shows an error state and does not mark refresh done when logs request fails', async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === '/logs') return Promise.reject(new Error('network down'))
+      if (url === '/accounts') return Promise.resolve({ data: mockAccountsList })
+      return Promise.resolve({ data: {} })
+    })
+    const wrapper = shallowMount(LogsView, mountOptions)
+    await flushPromises()
+
+    expect(wrapper.text()).toMatch(/加载日志失败|Failed to load logs/)
+    expect(wrapper.text()).toMatch(/重试|Retry/)
+
+    const refreshBtn = wrapper.findAll('button').find(b => b.text().match(/刷新|Refresh/))
+    expect(refreshBtn).toBeDefined()
+    await refreshBtn!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toMatch(/已刷新|Done/)
   })
 
   // --- Detail drawer ---
@@ -450,12 +520,12 @@ describe('LogsView', () => {
 
   // --- API failure handling ---
 
-  it('handles fetch failure gracefully with empty state', async () => {
+  it('handles fetch failure with an error state', async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error('Network error'))
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/暂无日志|No logs yet/)
+    expect(wrapper.text()).toMatch(/加载日志失败|Failed to load logs/)
   })
 
   // --- Drawer collapse levels ---

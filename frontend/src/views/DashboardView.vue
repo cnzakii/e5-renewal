@@ -69,8 +69,16 @@
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
       <!-- Trend Chart (3/5) -->
       <div class="lg:col-span-3 glass-card glass-card-hover p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('dashboard.chart.trend') }}</h3>
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('dashboard.chart.reliabilityTrend') }}</h3>
+            <p class="mt-1 text-[12px] text-gray-400 dark:text-gray-500">{{ t('dashboard.stat.successRate') }}</p>
+          </div>
+          <div class="hidden sm:flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
+            <span class="chart-legend-dot bg-apple-blue"></span>{{ t('dashboard.stat.successRate') }}
+            <span class="chart-legend-dot bg-emerald-500/60"></span>{{ t('dashboard.chart.successRequests') }}
+            <span class="chart-legend-dot bg-rose-500/70"></span>{{ t('dashboard.chart.failedRequests') }}
+          </div>
         </div>
         <v-chart ref="trendChartRef" :option="trendOption" autoresize style="width: 100%; height: 256px;" />
       </div>
@@ -92,7 +100,7 @@
           <router-link
             v-for="acc in data.account_health"
             :key="acc.id"
-            :to="{ path: `${pathPrefix}/accounts`, query: { highlight: String(acc.id) } }"
+            :to="{ path: '/accounts', query: { highlight: String(acc.id) } }"
             class="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/15 dark:border-white/6 hover:bg-white/50 dark:hover:bg-white/10 hover:border-apple-blue/30 dark:hover:border-apple-blue/20 hover:shadow-md hover:shadow-apple-blue/5 transition-all duration-200 group/acc no-underline"
           >
             <span :class="['w-2.5 h-2.5 rounded-full shrink-0', acc.auth_type === 'auth_code' ? 'bg-blue-500' : 'bg-amber-500']"></span>
@@ -128,7 +136,7 @@
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('dashboard.logs.title') }}</h3>
         <router-link
-          :to="`${pathPrefix}/logs`"
+          to="/logs"
           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[13px] font-medium text-apple-blue bg-apple-blue/8 hover:bg-apple-blue/15 border border-apple-blue/15 hover:border-apple-blue/30 transition-all duration-200 no-underline group/link"
         >
           {{ t('dashboard.logs.viewAll') }}
@@ -189,18 +197,17 @@ import { useRouter } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
+import { BarChart, LineChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 
 import { apiClient } from '../api/client'
 import { useI18n } from '../i18n'
 
-use([CanvasRenderer, LineChart, TooltipComponent, LegendComponent, GridComponent])
+use([CanvasRenderer, BarChart, LineChart, TooltipComponent, LegendComponent, GridComponent])
 
 const { t } = useI18n()
 const router = useRouter()
-const pathPrefix = import.meta.env.VITE_PATH_PREFIX || ''
 
 interface AccountHealth {
   id: number
@@ -215,6 +222,9 @@ interface AccountHealth {
 interface TrendItem {
   date: string
   total_requests: number
+  success_requests: number
+  failed_requests: number
+  success_rate: number
 }
 
 interface RecentRun {
@@ -391,7 +401,7 @@ function formatDuration(start: string, end: string) {
   return `${Math.floor(secs / 60)}m ${secs % 60}s`
 }
 function goToRun(id: number) {
-  router.push({ path: `${pathPrefix}/logs`, query: { id: String(id) } })
+  router.push({ path: '/logs', query: { id: String(id) } })
 }
 
 function healthBarColor(health: number): string {
@@ -407,7 +417,15 @@ function healthTextColor(health: number): string {
 }
 
 // Custom tooltip formatter
-function tooltipFormatter(params: any): string {
+type TooltipParam = {
+  axisValue?: string
+  color?: string
+  seriesName?: string
+  value?: number | string
+  dataIndex?: number
+}
+
+function tooltipFormatter(params: TooltipParam | TooltipParam[]): string {
   const items = Array.isArray(params) ? params : [params]
   const title = items[0]?.axisValue || ''
   const dark = isDark.value
@@ -417,10 +435,11 @@ function tooltipFormatter(params: any): string {
   let html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;padding:4px 2px">`
   html += `<div style="font-size:12px;font-weight:600;color:${titleColor};margin-bottom:8px">${title}</div>`
   for (const item of items) {
+    const suffix = item.seriesName === t('dashboard.stat.successRate') ? '%' : ''
     html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">`
     html += `<span style="width:8px;height:8px;border-radius:50%;background:${item.color};display:inline-block"></span>`
     html += `<span style="font-size:12px;color:${labelColor};flex:1">${item.seriesName}</span>`
-    html += `<span style="font-size:13px;font-weight:600;color:${valueColor};font-variant-numeric:tabular-nums">${item.value?.toLocaleString()}</span>`
+    html += `<span style="font-size:13px;font-weight:600;color:${valueColor};font-variant-numeric:tabular-nums">${item.value?.toLocaleString()}${suffix}</span>`
     html += `</div>`
   }
   html += `</div>`
@@ -481,20 +500,32 @@ const tooltipStyle = computed(() => ({
 
 const trendOption = computed(() => ({
   tooltip: { trigger: 'axis' as const, formatter: tooltipFormatter, ...tooltipStyle.value },
-  grid: { left: 40, right: 16, top: 18, bottom: 24 },
+  legend: { show: false },
+  grid: { left: 40, right: 42, top: 18, bottom: 24 },
   xAxis: {
     type: 'category' as const,
     data: data.value.trend.map(d => d.date),
     axisLabel: { color: textColor.value, fontSize: 11 },
     axisLine: { lineStyle: { color: isDark.value ? '#333' : '#e5e7eb' } },
   },
-  yAxis: {
-    type: 'value' as const,
-    axisLabel: { color: textColor.value, fontSize: 11 },
-    splitLine: { lineStyle: { color: isDark.value ? '#222' : '#f0f0f0' } },
-  },
+  yAxis: [
+    {
+      type: 'value' as const,
+      axisLabel: { color: textColor.value, fontSize: 11 },
+      splitLine: { lineStyle: { color: isDark.value ? '#222' : '#f0f0f0' } },
+    },
+    {
+      type: 'value' as const,
+      min: 0,
+      max: 100,
+      axisLabel: { color: textColor.value, fontSize: 11, formatter: '{value}%' },
+      splitLine: { show: false },
+    },
+  ],
   series: [
-    { name: t('dashboard.chart.totalRequests'), type: 'line', data: data.value.trend.map(d => d.total_requests), smooth: true, symbolSize: 6, itemStyle: { color: '#3b82f6' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.25)' }, { offset: 1, color: 'rgba(59,130,246,0.02)' }] } } },
+    { name: t('dashboard.chart.successRequests'), type: 'bar', stack: 'requests', barWidth: '42%', data: data.value.trend.map(d => d.success_requests), itemStyle: { color: isDark.value ? 'rgba(16, 185, 129, 0.34)' : 'rgba(16, 185, 129, 0.26)', borderRadius: [4, 4, 0, 0] }, emphasis: { focus: 'series' } },
+    { name: t('dashboard.chart.failedRequests'), type: 'bar', stack: 'requests', barWidth: '42%', data: data.value.trend.map(d => d.failed_requests), itemStyle: { color: isDark.value ? 'rgba(244, 63, 94, 0.62)' : 'rgba(244, 63, 94, 0.52)', borderRadius: [4, 4, 0, 0] }, emphasis: { focus: 'series' } },
+    { name: t('dashboard.stat.successRate'), type: 'line', yAxisIndex: 1, data: data.value.trend.map(d => Number(d.success_rate.toFixed(1))), smooth: true, symbolSize: 5, itemStyle: { color: '#0071e3' }, lineStyle: { width: 2.5, color: '#0071e3' } },
   ],
 }))
 </script>
@@ -527,6 +558,13 @@ const trendOption = computed(() => ({
   }
 }
 .recent-run-grid { grid-template-columns: 1fr 3fr 1.5fr 2.5fr 1.5fr 2fr 1.5fr; }
+
+.chart-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
 
 .hide-scrollbar {
   scrollbar-width: none;

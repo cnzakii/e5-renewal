@@ -28,11 +28,11 @@
     </div>
 
     <!-- Filter Bar -->
-    <div class="glass-card px-4 py-3 flex items-center gap-3 relative z-10">
+    <div class="glass-card px-4 py-3 flex flex-wrap items-center gap-3 relative z-10">
       <!-- ID search -->
       <div class="filter-pill h-[32px] flex-1 min-w-[80px]">
         <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-        <input v-model="filters.runId" :placeholder="t('logs.filter.id.placeholder')" class="flex-1 bg-transparent outline-none text-[12px] font-medium min-w-0 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" @input="applyFilters()" />
+        <input v-model="filters.runId" :placeholder="t('logs.filter.id.placeholder')" class="flex-1 bg-transparent outline-none text-[12px] font-medium min-w-0 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" @input="scheduleRunIdFilter" />
       </div>
 
       <!-- Account dropdown -->
@@ -150,18 +150,68 @@
       </div>
 
       <!-- Pagination -->
-      <div class="flex items-center justify-between px-5 py-3 border-t border-gray-200/60 dark:border-white/8 bg-gray-50/30 dark:bg-white/2">
-        <span class="text-[12px] text-gray-400 dark:text-gray-500">{{ t('logs.pagination.total').replace('{total}', String(total)) }}</span>
-        <div class="flex items-center gap-1">
-          <button :disabled="page <= 1" class="page-btn" @click="goPage(page - 1)">
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-          </button>
-          <button v-for="p in visiblePages" :key="p" :class="['w-8 h-8 rounded-lg text-[12px] font-medium transition-all duration-200', p === page ? 'bg-apple-blue text-white shadow-md shadow-apple-blue/30' : 'text-gray-500 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-white/8']" @click="goPage(p)">{{ p }}</button>
-          <button :disabled="page >= totalPages" class="page-btn" @click="goPage(page + 1)">
-            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-          </button>
-        </div>
+      <div class="pagination-bar">
+        <span class="pagination-summary">
+          {{ t('logs.pagination.range')
+            .replace('{start}', String(rangeStart))
+            .replace('{end}', String(rangeEnd))
+            .replace('{total}', String(total)) }}
+        </span>
+        <nav class="pagination-controls" :aria-label="t('logs.pagination.navigation')">
+          <select
+            v-model.number="pageSize"
+            data-test="page-size-select"
+            class="pagination-select"
+            @change="changePageSize"
+          >
+            <option v-for="size in pageSizeOptions" :key="size" :value="size">
+              {{ t('logs.pagination.pageSize').replace('{size}', String(size)) }}
+            </option>
+          </select>
+
+          <div class="pagination-stepper">
+            <button :disabled="page <= 1" class="page-btn" data-test="first-page" :title="t('logs.pagination.first')" @click="goPage(1)">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 19.5L10.5 12 18 4.5M6 19.5v-15" /></svg>
+            </button>
+            <button :disabled="page <= 1" class="page-btn" :title="t('logs.pagination.prev')" @click="goPage(page - 1)">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            </button>
+            <form class="page-position" data-test="page-position-form" @submit.prevent="submitPageJump">
+              <span>{{ t('logs.pagination.pagePrefix') }}</span>
+              <input
+                v-model="pageJump"
+                data-test="page-jump-input"
+                class="page-position-input"
+                inputmode="numeric"
+                :aria-label="t('logs.pagination.currentPage')"
+                @blur="resetPageJump"
+                @focus="selectPageJump"
+              />
+              <span class="pagination-total-pages">/ {{ totalPages }} {{ t('logs.pagination.page') }}</span>
+            </form>
+            <button :disabled="page >= totalPages" class="page-btn" :title="t('logs.pagination.next')" @click="goPage(page + 1)">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            </button>
+            <button :disabled="page >= totalPages" class="page-btn" data-test="last-page" :title="t('logs.pagination.last')" @click="goPage(totalPages)">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4.5l7.5 7.5L6 19.5M18 4.5v15" /></svg>
+            </button>
+          </div>
+        </nav>
       </div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="loadError" class="flex flex-col items-center justify-center py-16 glass-card rounded-2xl">
+      <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM10.29 3.86L1.82 18a2.25 2.25 0 001.93 3.375h16.5A2.25 2.25 0 0022.18 18L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+      </div>
+      <h3 class="text-[15px] font-semibold text-gray-900 dark:text-white mb-1.5">{{ t('logs.error.load') }}</h3>
+      <p class="text-[13px] text-gray-400 dark:text-gray-500 mb-5">{{ loadError }}</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-apple-blue bg-apple-blue/8 hover:bg-apple-blue/15 border border-apple-blue/15 transition-colors" @click="refresh">
+        {{ t('logs.error.retry') }}
+      </button>
     </div>
 
     <!-- Empty State -->
@@ -380,8 +430,13 @@ const loading = ref(false)
 const runs = ref<TaskLogItem[]>([])
 const total = ref(0)
 const page = ref(1)
-const pageSize = 20
+const pageJump = ref('1')
+const pageSize = ref(20)
+const pageSizeOptions = [20, 50, 100]
+const loadError = ref('')
 const accountOptions = ref<AccountOption[]>([])
+let runIdFilterTimer: ReturnType<typeof setTimeout> | undefined
+let requestSeq = 0
 
 const filters = reactive({ runId: '', accountId: '', triggerType: '', status: '', dateFrom: '', dateTo: '' })
 
@@ -479,22 +534,51 @@ function toggleDrawerError(epId: number) {
 }
 
 // --- Pagination ---
-const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
-const visiblePages = computed(() => {
-  const pages: number[] = []
-  const tp = totalPages.value
-  let start = Math.max(1, page.value - 2)
-  const end = Math.min(tp, start + 4)
-  start = Math.max(1, end - 4)
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
-})
-function goPage(p: number) { if (p >= 1 && p <= totalPages.value) { page.value = p; fetchRuns() } }
-function applyFilters() { page.value = 1; fetchRuns() }
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+const rangeStart = computed(() => total.value === 0 ? 0 : (page.value - 1) * pageSize.value + 1)
+const rangeEnd = computed(() => Math.min(total.value, page.value * pageSize.value))
+function clampPage(p: number) {
+  if (!Number.isFinite(p)) return page.value
+  return Math.min(totalPages.value, Math.max(1, Math.floor(p)))
+}
+function resetPageJump() {
+  pageJump.value = String(page.value)
+}
+function goPage(p: number) {
+  const nextPage = clampPage(p)
+  if (nextPage >= 1 && nextPage <= totalPages.value) {
+    page.value = nextPage
+    resetPageJump()
+    fetchRuns()
+  }
+}
+function submitPageJump() {
+  const nextPage = Number(pageJump.value)
+  if (!Number.isFinite(nextPage) || nextPage < 1) {
+    resetPageJump()
+    return
+  }
+  goPage(nextPage)
+}
+function selectPageJump(event: FocusEvent) {
+  const target = event.target as HTMLInputElement | null
+  target?.select()
+}
+function changePageSize() {
+  page.value = 1
+  resetPageJump()
+  fetchRuns()
+}
+function applyFilters() { page.value = 1; resetPageJump(); fetchRuns() }
+function scheduleRunIdFilter() {
+  clearTimeout(runIdFilterTimer)
+  runIdFilterTimer = setTimeout(() => applyFilters(), 300)
+}
 const refreshDone = ref(false)
 let refreshDoneTimer: ReturnType<typeof setTimeout> | undefined
-function refresh() {
-  fetchRuns()
+async function refresh() {
+  const ok = await fetchRuns()
+  if (!ok) return
   refreshDone.value = true
   clearTimeout(refreshDoneTimer)
   refreshDoneTimer = setTimeout(() => { refreshDone.value = false }, 1500)
@@ -530,9 +614,10 @@ function rowClass(run: TaskLogItem, idx: number) {
 }
 
 async function fetchRuns() {
+  const seq = ++requestSeq
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: page.value, page_size: pageSize }
+    const params: Record<string, string | number> = { page: page.value, page_size: pageSize.value }
     if (filters.runId) params.id = filters.runId
     if (filters.accountId) params.account_id = filters.accountId
     if (filters.triggerType) params.trigger_type = filters.triggerType
@@ -540,13 +625,28 @@ async function fetchRuns() {
     if (filters.dateFrom) params.date_from = filters.dateFrom
     if (filters.dateTo) params.date_to = filters.dateTo
     const res = await apiClient.get('/logs', { params })
-    runs.value = res.data.items || []; total.value = res.data.total || 0
-  } catch { runs.value = []; total.value = 0 }
-  finally { loading.value = false }
+    if (seq !== requestSeq) return false
+    runs.value = res.data.items || []
+    total.value = res.data.total || 0
+    loadError.value = ''
+    return true
+  } catch {
+    if (seq === requestSeq) {
+      loadError.value = t('logs.error.load')
+      if (!runs.value.length) total.value = 0
+    }
+    return false
+  }
+  finally {
+    if (seq === requestSeq) loading.value = false
+  }
 }
 
 async function fetchAccounts() {
-  try { const res = await apiClient.get('/accounts'); accountOptions.value = (res.data || []).map((a: any) => ({ id: a.id, name: a.name, auth_type: a.auth_type || '' })) }
+  try {
+    const res = await apiClient.get<AccountOption[]>('/accounts')
+    accountOptions.value = (res.data || []).map((a) => ({ id: a.id, name: a.name, auth_type: a.auth_type || '' }))
+  }
   catch { accountOptions.value = [] }
 }
 
@@ -573,7 +673,10 @@ onMounted(() => {
   if (route.query.id) filters.runId = String(route.query.id)
   fetchAccounts(); fetchRuns()
 })
-onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  clearTimeout(runIdFilterTimer)
+})
 </script>
 
 <style scoped>
@@ -701,6 +804,121 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 }
 .page-btn:hover { background: rgba(0, 0, 0, 0.04); }
 .page-btn:disabled { opacity: 0.3; pointer-events: none; }
+
+.pagination-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(229, 231, 235, 0.6);
+  background: rgba(249, 250, 251, 0.28);
+  .dark & {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+.pagination-summary {
+  font-size: 12px;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+  .dark & {
+    color: #6b7280;
+  }
+}
+
+.pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 1024px) {
+  .pagination-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pagination-controls {
+    justify-content: flex-end;
+  }
+}
+
+.pagination-select {
+  height: 32px;
+  border-radius: 8px;
+  padding: 0 28px 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  outline: none;
+  .dark & {
+    color: #d1d5db;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.page-position {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  .dark & {
+    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.page-position-input {
+  width: 42px;
+  height: 24px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  .dark & {
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.page-position-input:focus {
+  border-color: rgba(0, 113, 227, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+}
+
+.pagination-total-pages {
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+  .dark & {
+    color: #6b7280;
+  }
+}
 
 /* Grids */
 .log-grid { grid-template-columns: 1fr 3fr 1.5fr 2.5fr 1.5fr 2fr 1.5fr 1.6fr; }

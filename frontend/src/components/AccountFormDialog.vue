@@ -400,10 +400,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { apiClient } from '../api/client'
-import { pathPrefix } from '../config'
 import RefreshTokenModePanel from './RefreshTokenModePanel.vue'
 
 export interface AccountFormData {
@@ -450,7 +449,6 @@ const { t } = useI18n()
 
 const saving = ref(false)
 const showSecret = ref(false)
-const showRefreshToken = ref(false)
 const dialogMode = ref<'preview' | 'edit'>('preview')
 const loadingSecrets = ref(false)
 const formError = ref('')
@@ -532,73 +530,6 @@ function onExpiryDaysInput(val: string) {
   }
 }
 
-function onExpiryDateInput(val: string) {
-  form.auth_expires_at = val
-  if (val) {
-    const diff = Math.ceil((new Date(val).getTime() - Date.now()) / 86400000)
-    expiryDays.value = diff > 0 ? diff : 0
-  } else {
-    expiryDays.value = null
-  }
-}
-
-const canOAuth = computed(() => {
-  return form.client_id.trim() && form.tenant_id.trim()
-})
-
-let oauthPopup: Window | null = null
-let oauthListener: ((e: MessageEvent) => void) | null = null
-
-function startOAuth() {
-  if (!canOAuth.value) return
-
-  // Clean up old listener
-  if (oauthListener) window.removeEventListener('message', oauthListener)
-
-  // Request authorize URL
-  apiClient.post('/oauth/authorize', {
-    client_id: form.client_id.trim(),
-    client_secret: form.client_secret.trim(),
-    tenant_id: form.tenant_id.trim(),
-    redirect_uri: `${window.location.origin}${pathPrefix}/api/oauth/callback`,
-  }).then(res => {
-    const authorizeUrl = res.data.authorize_url
-    oauthPopup = window.open(authorizeUrl, 'e5-oauth', 'width=600,height=700,scrollbars=yes')
-
-    oauthListener = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return
-      if (e.data?.type !== 'e5-oauth-result') return
-      window.removeEventListener('message', oauthListener!)
-      oauthListener = null
-
-      const { status, payload } = e.data.data
-      if (status === 'success') {
-        try {
-          const tokenData = JSON.parse(payload)
-          form.refresh_token = tokenData.refresh_token || ''
-          verifyResult.value = 'valid'
-          setTimeout(() => { verifyResult.value = null }, 3000)
-        } catch {
-          verifyError.value = t('accounts.form.refreshToken.oauth.parseError')
-          verifyResult.value = 'error'
-        }
-      } else {
-        verifyError.value = payload || t('accounts.form.refreshToken.oauth.failed')
-        verifyResult.value = 'error'
-      }
-    }
-    window.addEventListener('message', oauthListener)
-  }).catch(err => {
-    verifyError.value = err?.response?.data?.error || t('accounts.form.refreshToken.oauth.failed')
-    verifyResult.value = 'error'
-  })
-}
-
-onUnmounted(() => {
-  if (oauthListener) window.removeEventListener('message', oauthListener)
-  oauthPopup?.close()
-})
-
 function submit() {
   if (!validateAll()) return
   emit('save', { ...form })
@@ -640,12 +571,28 @@ async function verify() {
     verifyResult.value = 'valid'
     clearTimeout(verifyTimer)
     verifyTimer = setTimeout(() => { verifyResult.value = null }, 3000)
-  } catch (err: any) {
+  } catch (err: unknown) {
     verifyResult.value = 'error'
-    verifyError.value = err?.response?.data?.error || err?.message || t('accounts.verify.invalid')
+    verifyError.value = apiErrorMessage(err) || t('accounts.verify.invalid')
   } finally {
     verifying.value = false
   }
+}
+
+type ApiErrorLike = {
+  response?: { data?: { error?: string } }
+  message?: string
+}
+
+function apiErrorMessage(err: unknown): string {
+  if (!err || typeof err !== 'object') return ''
+  const apiErr = err as ApiErrorLike
+  return apiErr.response?.data?.error || apiErr.message || ''
+}
+
+function apiResponseErrorMessage(err: unknown): string {
+  if (!err || typeof err !== 'object') return ''
+  return (err as ApiErrorLike).response?.data?.error || ''
 }
 
 // --- Preview expiry helpers ---
@@ -673,8 +620,8 @@ async function enterEditMode() {
     form.client_secret = data.client_secret
     form.refresh_token = data.refresh_token
     dialogMode.value = 'edit'
-  } catch (err: any) {
-    formError.value = err?.response?.data?.error || t('accounts.form.loadSecretsError')
+  } catch (err: unknown) {
+    formError.value = apiResponseErrorMessage(err) || t('accounts.form.loadSecretsError')
   } finally {
     loadingSecrets.value = false
   }
@@ -683,7 +630,6 @@ async function enterEditMode() {
 watch(() => props.visible, (val) => {
   if (val) {
     showSecret.value = false
-    showRefreshToken.value = false
     verifying.value = false
     verifyResult.value = null
     verifyError.value = ''
@@ -835,14 +781,14 @@ defineExpose({ saving, loadingSecrets, formError })
 }
 
 .dialog-content-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
 }
 .dialog-content-leave-active {
   transition: all 0.15s ease;
 }
 .dialog-content-enter-from {
   opacity: 0;
-  transform: scale(0.95) translateY(8px);
+  transform: scale(0.95) translateY(4px);
 }
 .dialog-content-leave-to {
   opacity: 0;
@@ -861,7 +807,7 @@ defineExpose({ saving, loadingSecrets, formError })
 .field-slide-enter-from {
   opacity: 0;
   max-height: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 .field-slide-enter-to {
   max-height: 300px;
@@ -872,7 +818,7 @@ defineExpose({ saving, loadingSecrets, formError })
 .field-slide-leave-to {
   opacity: 0;
   max-height: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 
 /* Field error transition */

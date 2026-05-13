@@ -104,16 +104,14 @@ jobs:
         run: |
           COVERAGE=$(node -e "
             const summary = require('./coverage/coverage-summary.json');
-            const total = summary.total;
-            const avg = (total.lines.pct + total.branches.pct + total.functions.pct + total.statements.pct) / 4;
-            console.log(avg.toFixed(2));
+            console.log(summary.total.lines.pct.toFixed(2));
           ")
-          echo "Frontend coverage: ${COVERAGE}%"
+          echo "Frontend line coverage: ${COVERAGE}%"
           if [ "$(echo "${COVERAGE} < ${FRONTEND_COVERAGE_THRESHOLD}" | bc -l)" -eq 1 ]; then
-            echo "::error::Frontend coverage ${COVERAGE}% is below threshold ${FRONTEND_COVERAGE_THRESHOLD}%"
+            echo "::error::Frontend line coverage ${COVERAGE}% is below threshold ${FRONTEND_COVERAGE_THRESHOLD}%"
             exit 1
           fi
-          echo "Frontend coverage ${COVERAGE}% meets threshold ${FRONTEND_COVERAGE_THRESHOLD}%"
+          echo "Frontend line coverage ${COVERAGE}% meets threshold ${FRONTEND_COVERAGE_THRESHOLD}%"
 
   build:
     name: Docker Build

@@ -26,6 +26,7 @@ vi.mock('echarts/renderers', () => ({
 }))
 vi.mock('echarts/charts', () => ({
   LineChart: {},
+  BarChart: {},
 }))
 vi.mock('echarts/components', () => ({
   TooltipComponent: {},
@@ -47,8 +48,8 @@ const summaryData = {
 }
 
 const trendData = [
-  { date: '03-01', success: 100, failure: 2 },
-  { date: '03-02', success: 110, failure: 3 },
+  { date: '03-01', total_requests: 102, success_requests: 100, failed_requests: 2, success_rate: 98.0 },
+  { date: '03-02', total_requests: 113, success_requests: 110, failed_requests: 3, success_rate: 97.3 },
 ]
 
 const healthData = [
@@ -79,8 +80,8 @@ const mountOptions = {
   global: {
     stubs: {
       RouterLink: { template: '<a><slot /></a>' },
-      VChart: { template: '<div class="vchart-stub" />' },
-      'v-chart': { template: '<div class="vchart-stub" />' },
+      VChart: { name: 'VChart', props: ['option'], template: '<div class="vchart-stub">{{ option.series.map(s => s.name).join(" ") }}</div>' },
+      'v-chart': { name: 'VChart', props: ['option'], template: '<div class="vchart-stub">{{ option.series.map(s => s.name).join(" ") }}</div>' },
       Transition: { template: '<div><slot /></div>' },
       transition: { template: '<div><slot /></div>' },
     },
@@ -194,6 +195,18 @@ describe('DashboardView', () => {
 
     expect(wrapper.text()).toContain('Contoso Dev')
     expect(wrapper.text()).toContain('98.2%')
+  })
+
+  it('renders reliability trend with success rate and request outcome series', async () => {
+    mockSuccessfulFetch()
+    const wrapper = shallowMount(DashboardView, mountOptions)
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toMatch(/可靠性趋势|Reliability Trend/)
+    expect(text).toMatch(/成功率|Success Rate/)
+    expect(text).toMatch(/成功请求|Successful Requests/)
+    expect(text).toMatch(/失败请求|Failed Requests/)
   })
 
   // --- Format functions ---

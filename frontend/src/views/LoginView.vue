@@ -50,7 +50,12 @@
                 :placeholder="t('login.key')"
                 autocomplete="current-password"
                 :disabled="loading"
-                :class="['w-full px-4 py-3.5 pr-11 rounded-xl bg-gray-100/80 dark:bg-white/10 border text-gray-900 dark:text-white placeholder-apple-gray text-[15px] outline-none transition-all duration-200 disabled:opacity-50', fieldErrors.key || requestError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-400/30' : 'border-transparent focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/30 focus:animate-focus-glow']"
+                :class="[
+                  'w-full px-4 py-3.5 pr-11 rounded-xl border text-gray-900 dark:text-white placeholder-apple-gray text-[15px] outline-none transition-all duration-200 disabled:opacity-50',
+                  fieldErrors.key || requestError
+                    ? 'bg-rose-50/60 border-rose-300/70 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/25 dark:bg-rose-950/10 dark:border-rose-400/20 dark:focus:border-rose-300/35 dark:focus:ring-rose-400/12'
+                    : 'bg-gray-100/80 dark:bg-white/10 border-transparent dark:border-white/8 focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/30 focus:animate-focus-glow'
+                ]"
                 @input="handleInputEdit"
               />
               <button
@@ -68,7 +73,7 @@
                 </svg>
               </button>
             </div>
-            <p v-if="fieldErrors.key" class="mt-1.5 text-xs text-red-500">{{ fieldErrors.key }}</p>
+            <p v-if="fieldErrors.key" class="mt-1.5 text-xs text-rose-600 dark:text-rose-300/90">{{ fieldErrors.key }}</p>
           </div>
 
           <!-- 记住我 -->
@@ -161,7 +166,7 @@ async function handleLogin() {
     })
     setAuth(res.data.token, rememberMe.value)
     router.push(`${prefix}/dashboard`)
-  } catch (e: any) {
+  } catch (e: unknown) {
     requestError.value = getLoginErrorMessage(e)
     triggerShake()
   } finally {
@@ -174,9 +179,17 @@ function triggerShake() {
   setTimeout(() => { shaking.value = false }, 240)
 }
 
-function getLoginErrorMessage(errorPayload: any): string {
-  const status = errorPayload?.response?.status as number | undefined
-  const backendMessage = errorPayload?.response?.data?.error as string | undefined
+type ApiErrorLike = {
+  response?: {
+    status?: number
+    data?: { error?: string }
+  }
+}
+
+function getLoginErrorMessage(errorPayload: unknown): string {
+  const apiError = errorPayload && typeof errorPayload === 'object' ? errorPayload as ApiErrorLike : {}
+  const status = apiError.response?.status
+  const backendMessage = apiError.response?.data?.error
 
   if (typeof backendMessage === 'string' && backendMessage.trim()) {
     return backendMessage

@@ -277,12 +277,21 @@ async function testNotification() {
   try {
     await apiClient.post('/settings/notification/test')
     showToast('success', t('settings.notification.test.success'))
-  } catch (err: any) {
-    const detail = err?.response?.data?.error
+  } catch (err: unknown) {
+    const detail = apiErrorMessage(err)
     showToast('error', detail || t('settings.notification.test.error'))
   } finally {
     testing.value = false
   }
+}
+
+type ApiErrorLike = {
+  response?: { data?: { error?: string } }
+}
+
+function apiErrorMessage(err: unknown): string {
+  if (!err || typeof err !== 'object') return ''
+  return (err as ApiErrorLike).response?.data?.error || ''
 }
 
 onMounted(() => fetchSettings())
@@ -362,7 +371,7 @@ onMounted(() => fetchSettings())
 .field-slide-enter-from {
   opacity: 0;
   max-height: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 .field-slide-enter-to {
   max-height: 100px;
@@ -373,22 +382,22 @@ onMounted(() => fetchSettings())
 .field-slide-leave-to {
   opacity: 0;
   max-height: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 
 /* Toast */
 .toast-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
 }
 .toast-leave-active {
   transition: all 0.2s ease;
 }
 .toast-enter-from {
   opacity: 0;
-  transform: translateY(-12px) scale(0.95);
+  transform: translateY(-6px) scale(0.95);
 }
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 </style>

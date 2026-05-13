@@ -70,6 +70,8 @@ const props = withDefaults(defineProps<{
   cancelText?: string
   danger?: boolean
 }>(), {
+  confirmText: '',
+  cancelText: '',
   danger: false,
 })
 
@@ -112,7 +114,7 @@ function confirm() {
 }
 
 .confirm-dialog-enter-active {
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.16s ease-out;
 }
 .confirm-dialog-leave-active {
   transition: all 0.15s ease;

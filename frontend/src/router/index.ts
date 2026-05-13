@@ -2,12 +2,12 @@ import { createMemoryHistory, createRouter, createWebHistory, type RouteRecordRa
 import { useAuth } from '../stores/auth'
 import { pathPrefix as prefix } from '../config'
 
-import LoginView from '../views/LoginView.vue'
-import AppLayout from '../components/AppLayout.vue'
-import DashboardView from '../views/DashboardView.vue'
-import AccountsView from '../views/AccountsView.vue'
-import LogsView from '../views/LogsView.vue'
-import SettingsView from '../views/SettingsView.vue'
+const LoginView = () => import('../views/LoginView.vue')
+const AppLayout = () => import('../components/AppLayout.vue')
+const DashboardView = () => import('../views/DashboardView.vue')
+const AccountsView = () => import('../views/AccountsView.vue')
+const LogsView = () => import('../views/LogsView.vue')
+const SettingsView = () => import('../views/SettingsView.vue')
 
 export function buildRoutes(): RouteRecordRaw[] {
   return [

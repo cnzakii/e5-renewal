@@ -149,6 +149,32 @@ describe('AccountsView', () => {
     expect(text).toMatch(/手动触发|Trigger/)
   })
 
+  it('filters accounts by search text and status', async () => {
+    const accounts = [
+      { ...mockAccounts[0], health: 98.2, schedule: { enabled: true, paused: false, pause_reason: '', pause_threshold: 30, next_run_at: null, last_run_at: null } },
+      { ...mockAccounts[1], health: 42.5, schedule: { enabled: true, paused: true, pause_reason: 'low health', pause_threshold: 30, next_run_at: null, last_run_at: null } },
+      { ...mockAccounts[0], id: 3, name: 'Northwind Idle', health: null, schedule: { enabled: false, paused: false, pause_reason: '', pause_threshold: 30, next_run_at: null, last_run_at: null } },
+    ]
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: accounts })
+    const wrapper = shallowMount(AccountsView, mountOptions)
+    await flushPromises()
+
+    await wrapper.find('[data-test="account-search"]').setValue('fabrikam')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Fabrikam Prod')
+    expect(wrapper.text()).not.toContain('Contoso Dev')
+    expect(wrapper.text()).not.toContain('Northwind Idle')
+
+    await wrapper.find('[data-test="account-search"]').setValue('')
+    await wrapper.find('[data-test="account-status-filter"]').setValue('paused')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Fabrikam Prod')
+    expect(wrapper.text()).not.toContain('Contoso Dev')
+    expect(wrapper.text()).not.toContain('Northwind Idle')
+  })
+
   it('trigger calls API and shows dialog', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockAccounts })
     vi.mocked(apiClient.post).mockResolvedValueOnce({
@@ -169,6 +195,29 @@ describe('AccountsView', () => {
     await flushPromises()
 
     expect(apiClient.post).toHaveBeenCalledWith('/accounts/1/trigger')
+  })
+
+  it('disables the triggering account tile while a manual trigger is running', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockAccounts })
+    let resolveTrigger: (value: unknown) => void = () => {}
+    vi.mocked(apiClient.post).mockReturnValueOnce(new Promise((resolve) => {
+      resolveTrigger = resolve
+    }))
+
+    const wrapper = shallowMount(AccountsView, mountOptions)
+    await flushPromises()
+
+    const triggerButtons = wrapper.findAll('[data-test="account-trigger"]')
+    expect(triggerButtons.length).toBeGreaterThan(0)
+    await triggerButtons[0].trigger('click')
+    await flushPromises()
+
+    expect(triggerButtons[0].attributes('aria-disabled')).toBe('true')
+    expect(triggerButtons[0].text()).toMatch(/触发中|Triggering/)
+
+    resolveTrigger({ data: { task_log: { id: 1 }, endpoints: [] } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-test="account-trigger"]')[0].attributes('aria-disabled')).toBe('false')
   })
 
   it('handles API failure on fetch gracefully', async () => {

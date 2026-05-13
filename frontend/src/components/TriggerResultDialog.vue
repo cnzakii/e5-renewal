@@ -226,14 +226,14 @@ function close() {
   opacity: 0;
 }
 .dialog-content-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
 }
 .dialog-content-leave-active {
   transition: all 0.15s ease;
 }
 .dialog-content-enter-from {
   opacity: 0;
-  transform: scale(0.95) translateY(8px);
+  transform: scale(0.95) translateY(4px);
 }
 .dialog-content-leave-to {
   opacity: 0;

@@ -66,8 +66,8 @@
                 <button
                   v-if="schedule.paused"
                   :disabled="saving"
-                  @click="resume"
                   class="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200/50 dark:border-amber-500/15 transition-all duration-200"
+                  @click="resume"
                 >
                   <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
@@ -137,8 +137,8 @@
               </button>
               <button
                 :disabled="saving"
-                @click="save"
                 class="px-5 py-2.5 rounded-xl text-[13px] font-medium text-white bg-apple-blue hover:bg-apple-blue-hover border border-apple-blue/80 shadow-md shadow-apple-blue/20 transition-all duration-200 disabled:opacity-60 btn-shine"
+                @click="save"
               >
                 {{ saving ? t('accounts.form.saving') : t('accounts.form.save') }}
               </button>
@@ -283,14 +283,14 @@ watch(() => props.visible, (val) => {
   opacity: 0;
 }
 .dialog-content-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
 }
 .dialog-content-leave-active {
   transition: all 0.15s ease;
 }
 .dialog-content-enter-from {
   opacity: 0;
-  transform: scale(0.95) translateY(8px);
+  transform: scale(0.95) translateY(4px);
 }
 .dialog-content-leave-to {
   opacity: 0;

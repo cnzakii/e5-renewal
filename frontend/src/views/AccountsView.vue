@@ -14,6 +14,33 @@
       </button>
     </div>
 
+    <!-- Tools -->
+    <div v-if="accounts.length" class="glass-card px-4 py-3 flex flex-wrap items-center gap-3">
+      <div class="filter-pill h-[34px] flex-1 min-w-[180px]">
+        <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        <input
+          v-model="accountSearch"
+          data-test="account-search"
+          :placeholder="t('accounts.filter.search.placeholder')"
+          class="flex-1 bg-transparent outline-none text-[12px] font-medium min-w-0 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+        />
+      </div>
+      <select v-model="accountStatusFilter" data-test="account-status-filter" class="filter-select">
+        <option value="all">{{ t('accounts.filter.status.all') }}</option>
+        <option value="healthy">{{ t('accounts.filter.status.healthy') }}</option>
+        <option value="warning">{{ t('accounts.filter.status.warning') }}</option>
+        <option value="paused">{{ t('accounts.filter.status.paused') }}</option>
+        <option value="disabled">{{ t('accounts.filter.status.disabled') }}</option>
+      </select>
+      <span class="ml-auto text-[12px] text-gray-400 dark:text-gray-500">
+        {{ t('accounts.filter.count')
+          .replace('{shown}', String(displayedAccounts.length))
+          .replace('{total}', String(accounts.length)) }}
+      </span>
+    </div>
+
     <!-- Skeleton Loading -->
     <div v-if="accountsLoading && !accounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
@@ -56,11 +83,11 @@
     </div>
 
     <!-- Card Grid -->
-    <div v-else-if="accounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div v-else-if="accounts.length && displayedAccounts.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
-        v-for="(acc, i) in accounts"
+        v-for="(acc, i) in displayedAccounts"
         :key="acc.id"
-        :ref="(el: any) => { if (el) cardRefs[acc.id] = el as HTMLElement }"
+        :ref="(el) => setCardRef(acc.id, el)"
         :class="[
           'account-card',
           skipStagger ? '' : `stagger-item stagger-${(i % 6) + 1}`,
@@ -199,23 +226,32 @@
             </div>
 
             <!-- Trigger tile -->
-            <div
-              class="action-tile action-tile-blue cursor-pointer h-[76px] overflow-hidden flex flex-col"
+            <button
+              type="button"
+              data-test="account-trigger"
+              :disabled="isTriggering(acc.id)"
+              :aria-disabled="String(isTriggering(acc.id))"
+              class="action-tile action-tile-blue cursor-pointer h-[76px] overflow-hidden flex flex-col text-left disabled:opacity-60 disabled:cursor-wait"
               @click.stop="triggerAccount(acc)"
             >
               <div class="flex items-center gap-2 mb-1.5">
-                <svg class="w-3.5 h-3.5 shrink-0 opacity-60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg :class="['w-3.5 h-3.5 shrink-0 opacity-60', isTriggering(acc.id) ? 'animate-spin' : '']" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                 </svg>
-                <span class="text-[11px] font-semibold uppercase tracking-wider opacity-60">{{ t('accounts.action.trigger') }}</span>
+                <span class="text-[11px] font-semibold uppercase tracking-wider opacity-60">{{ isTriggering(acc.id) ? t('accounts.action.triggering') : t('accounts.action.trigger') }}</span>
               </div>
               <span class="text-[10px] opacity-50 tabular-nums truncate">
                 {{ acc.last_run ? t('accounts.trigger.lastRun') + formatScheduleTime(acc.last_run) : t('accounts.trigger.neverTriggered') }}
               </span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-else-if="accounts.length && !displayedAccounts.length" class="flex flex-col items-center justify-center py-16 glass-card rounded-2xl">
+      <h3 class="text-[15px] font-semibold text-gray-900 dark:text-white mb-1.5">{{ t('accounts.empty') }}</h3>
+      <p class="text-[13px] text-gray-400 dark:text-gray-500">{{ t('accounts.filter.count').replace('{shown}', '0').replace('{total}', String(accounts.length)) }}</p>
     </div>
 
     <!-- Empty State -->
@@ -299,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, type ComponentPublicInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import AccountFormDialog from '../components/AccountFormDialog.vue'
@@ -316,6 +352,8 @@ const router = useRouter()
 
 const accounts = ref<Account[]>([])
 const accountsLoading = ref(true)
+const accountSearch = ref('')
+const accountStatusFilter = ref<'all' | 'healthy' | 'warning' | 'paused' | 'disabled'>('all')
 const showFormDialog = ref(false)
 const editingAccount = ref<Account | null>(null)
 const showDeleteDialog = ref(false)
@@ -323,6 +361,7 @@ const deletingAccount = ref<Account | null>(null)
 const showTriggerDialog = ref(false)
 const triggerResult = ref<TriggerResult | null>(null)
 const triggerLoading = ref(false)
+const triggeringAccountIds = ref<Set<number>>(new Set())
 const triggerAccountName = ref('')
 const showScheduleDialog = ref(false)
 const scheduleAccountId = ref<number | null>(null)
@@ -335,12 +374,46 @@ const cardRefs = ref<Record<number, HTMLElement | null>>({})
 const toast = reactive({ show: false, type: 'success' as 'success' | 'error', message: '' })
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
+const displayedAccounts = computed(() => {
+  const needle = accountSearch.value.trim().toLowerCase()
+  return accounts.value.filter((acc) => {
+    if (needle) {
+      const haystack = `${acc.name} ${acc.id} ${acc.auth_type}`.toLowerCase()
+      if (!haystack.includes(needle)) return false
+    }
+    switch (accountStatusFilter.value) {
+    case 'healthy':
+      return (acc.health ?? 0) >= 90
+    case 'warning':
+      return acc.health != null && acc.health < 90
+    case 'paused':
+      return !!acc.schedule?.paused
+    case 'disabled':
+      return !acc.schedule?.enabled
+    default:
+      return true
+    }
+  })
+})
+
 function showToast(type: 'success' | 'error', message: string) {
   clearTimeout(toastTimer)
   toast.show = true
   toast.type = type
   toast.message = message
   toastTimer = setTimeout(() => { toast.show = false }, 2500)
+}
+
+function setCardRef(accountId: number, el: Element | ComponentPublicInstance | null) {
+  if (!el) {
+    cardRefs.value[accountId] = null
+    return
+  }
+  const maybeComponent = el as ComponentPublicInstance
+  const node = maybeComponent.$el ?? el
+  if (node && typeof node === 'object' && 'scrollIntoView' in node) {
+    cardRefs.value[accountId] = node as HTMLElement
+  }
 }
 
 const deleteMessage = ref('')
@@ -390,23 +463,38 @@ async function handleDelete() {
 }
 
 async function triggerAccount(acc: Account) {
+  if (isTriggering(acc.id)) return
   triggerResult.value = null
   triggerAccountName.value = acc.name
   triggerLoading.value = true
   showTriggerDialog.value = true
+  setTriggering(acc.id, true)
   try {
     const res = await apiClient.post(`/accounts/${acc.id}/trigger`)
     triggerResult.value = res.data
-  } catch (err: any) {
-    if (err?.response?.data?.task_log) {
-      triggerResult.value = err.response.data
+  } catch (err: unknown) {
+    const data = apiErrorData(err)
+    if (data?.task_log) {
+      triggerResult.value = data as TriggerResult
     } else {
       showTriggerDialog.value = false
       showToast('error', t('accounts.trigger.error'))
     }
   } finally {
     triggerLoading.value = false
+    setTriggering(acc.id, false)
   }
+}
+
+function isTriggering(accountId: number) {
+  return triggeringAccountIds.value.has(accountId)
+}
+
+function setTriggering(accountId: number, active: boolean) {
+  const next = new Set(triggeringAccountIds.value)
+  if (active) next.add(accountId)
+  else next.delete(accountId)
+  triggeringAccountIds.value = next
 }
 
 async function fetchAccounts() {
@@ -419,6 +507,19 @@ async function fetchAccounts() {
   } finally {
     accountsLoading.value = false
   }
+}
+
+type ApiErrorData = {
+  task_log?: unknown
+}
+
+type ApiErrorLike = {
+  response?: { data?: ApiErrorData }
+}
+
+function apiErrorData(err: unknown): ApiErrorData | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  return (err as ApiErrorLike).response?.data
 }
 
 async function toggleNotify(acc: Account) {
@@ -582,6 +683,38 @@ function expiryUrgencyColor(dateStr: string): string {
   }
 }
 
+.filter-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(243, 244, 246, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  .dark & {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.filter-select {
+  height: 34px;
+  min-width: 138px;
+  border-radius: 12px;
+  padding: 0 28px 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  background: rgba(243, 244, 246, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  outline: none;
+  .dark & {
+    color: #d1d5db;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
 /* === Spotlight: soft ring that fades out === */
 .card-spotlight > .glass-card {
   animation: spotlight-ring 3s ease-out forwards;
@@ -675,17 +808,17 @@ function expiryUrgencyColor(dateStr: string): string {
 
 /* === Toast === */
 .toast-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.18s ease-out;
 }
 .toast-leave-active {
   transition: all 0.2s ease;
 }
 .toast-enter-from {
   opacity: 0;
-  transform: translateY(-12px) scale(0.95);
+  transform: translateY(-6px) scale(0.95);
 }
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 </style>

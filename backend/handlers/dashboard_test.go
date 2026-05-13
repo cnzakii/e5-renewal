@@ -144,6 +144,38 @@ func TestDashboardTrend1d(t *testing.T) {
 	assert.Len(t, resp, 24)
 }
 
+func TestDashboardTrendIncludesReliabilityFields(t *testing.T) {
+	_, do := dashboardEngine(t)
+
+	ctx := context.Background()
+	acc := models.Account{Name: "trend-acc", AuthType: models.AuthTypeClientCredentials, AuthInfo: `{"client_id":"c","client_secret":"s","tenant_id":"t"}`}
+	require.NoError(t, database.Accounts.Create(ctx, &acc))
+
+	now := time.Now().UTC()
+	successLog := models.TaskLog{AccountID: acc.ID, RunID: "trend-success", TriggerType: models.TriggerScheduled, TotalEndpoints: 5, SuccessCount: 5, FailCount: 0, StartedAt: now}
+	partialLog := models.TaskLog{AccountID: acc.ID, RunID: "trend-partial", TriggerType: models.TriggerManual, TotalEndpoints: 5, SuccessCount: 3, FailCount: 2, StartedAt: now}
+	require.NoError(t, database.TaskLogs.CreateWithEndpoints(ctx, &successLog, nil))
+	require.NoError(t, database.TaskLogs.CreateWithEndpoints(ctx, &partialLog, nil))
+
+	w := do(http.MethodGet, "/api/dashboard/trend?period=7d")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp []map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	var bucket map[string]interface{}
+	for _, item := range resp {
+		if item["total_requests"] == float64(10) {
+			bucket = item
+			break
+		}
+	}
+	require.NotNil(t, bucket)
+	assert.Equal(t, float64(8), bucket["success_requests"])
+	assert.Equal(t, float64(2), bucket["failed_requests"])
+	assert.Equal(t, float64(80), bucket["success_rate"])
+}
+
 func TestDashboardAccountHealth(t *testing.T) {
 	_, do := dashboardEngine(t)
 

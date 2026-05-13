@@ -65,8 +65,11 @@ func dashboardSummaryHandler() gin.HandlerFunc {
 // --- Trend ---
 
 type dashboardTrendItem struct {
-	Date          string `json:"date"`
-	TotalRequests int    `json:"total_requests"`
+	Date            string  `json:"date"`
+	TotalRequests   int     `json:"total_requests"`
+	SuccessRequests int     `json:"success_requests"`
+	FailedRequests  int     `json:"failed_requests"`
+	SuccessRate     float64 `json:"success_rate"`
 }
 
 func dashboardTrendHandler() gin.HandlerFunc {
@@ -177,6 +180,11 @@ func buildTrend(ctx context.Context, period string, now time.Time) []dashboardTr
 		item := dashboardTrendItem{Date: b.label}
 		for i := range logs {
 			item.TotalRequests += logs[i].TotalEndpoints
+			item.SuccessRequests += logs[i].SuccessCount
+			item.FailedRequests += logs[i].FailCount
+		}
+		if item.TotalRequests > 0 {
+			item.SuccessRate = float64(item.SuccessRequests) / float64(item.TotalRequests) * 100
 		}
 		result = append(result, item)
 	}

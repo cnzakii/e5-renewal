@@ -66,6 +66,18 @@ describe('router', () => {
       expect(childPaths).toContain('/settings')
     })
 
+    it('uses lazy route components so views can be split into chunks', () => {
+      const routes = buildRoutes()
+      const login = routes.find((r) => r.path === '/login')
+      const layout = routes.find((r) => r.path === '/' && r.children)
+
+      expect(typeof login?.component).toBe('function')
+      expect(typeof layout?.component).toBe('function')
+      for (const child of layout?.children ?? []) {
+        expect(typeof child.component).toBe('function')
+      }
+    })
+
     it('/ has a redirect to /dashboard', () => {
       const routes = buildRoutes()
       const redirect = routes.find((r) => r.path === '/' && r.redirect)

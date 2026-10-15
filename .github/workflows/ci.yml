@@ -6,7 +6,6 @@ on:
   workflow_call: # Allow reuse from release.yml
 
 env:
-  GO_VERSION: "1.25"
   NODE_VERSION: "22"
   # Coverage thresholds (%)
   BACKEND_COVERAGE_THRESHOLD: 80
@@ -21,7 +20,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
       - uses: golangci/golangci-lint-action@v9
@@ -40,7 +39,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
       - name: Run tests with coverage

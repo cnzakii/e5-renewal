@@ -106,7 +106,7 @@ services:
 
 ## Development
 
-**Prerequisites:** Go 1.25+, Node.js 22+
+**Prerequisites:** Go 1.26+, Node.js 22+
 
 ```bash
 # Backend

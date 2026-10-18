@@ -13,7 +13,7 @@
     "@vueuse/core": "^14.2.1",
     "axios": "^1.16.1",
     "echarts": "^6.0.0",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.3",
     "v-calendar": "^3.1.2",
     "vue": "^3.5.34",
     "vue-echarts": "^8.0.1",

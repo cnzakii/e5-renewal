@@ -1,0 +1,22 @@
+services:
+  e5-renewal:
+    image: ghcr.io/cnzakii/e5-renewal:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - data:/data
+    environment:
+      E5_PUBLIC_URL: ${E5_PUBLIC_URL:-http://localhost:8080}
+      E5_LOG_LEVEL: ${E5_LOG_LEVEL:-INFO}
+      E5_LOG_FORMAT: ${E5_LOG_FORMAT:-text}
+      E5_LOG_FILE: ${E5_LOG_FILE:-}
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 20s
+
+volumes:
+  data:

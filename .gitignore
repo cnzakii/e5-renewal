@@ -39,7 +39,6 @@ frontend/.cache/
 dist/
 build/
 tmp/
-!backend/static/dist/
 
 # IDE/editor
 .idea/
@@ -55,6 +54,11 @@ out/
 *.db-wal
 data/
 
-# Go embed static files (populated by Docker build)
-backend/static/dist/*
-!backend/static/dist/.gitkeep
+# Local assistant settings
+.claude/
+
+# Embedded UI build
+!web/dist/
+web/dist/*
+!web/dist/.gitkeep
+frontend/tsconfig.tsbuildinfo

@@ -1,0 +1,4 @@
+interface:
+  display_name: "E5 Renewal Knowledge"
+  short_description: "Verify OAuth, Graph, and engineering facts"
+  default_prompt: "Use $e5-renewal-knowledge to verify this OAuth, Graph, or engineering claim from primary sources."

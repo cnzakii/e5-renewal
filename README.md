@@ -1,129 +1,268 @@
-<p align="center">
-  <img src="frontend/public/favicon.svg" width="80" height="80" alt="E5 Renewal">
-</p>
-<h1 align="center">E5 Renewal</h1>
-<p align="center">
-  一个自托管的 Microsoft 365 E5 开发者订阅自动续期工具，通过定时调用随机 Graph API 保持订阅活跃。
-</p>
+# E5 Renewal
 
-<p align="center">
-  <a href="https://github.com/cnzakii/e5-renewal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cnzakii/e5-renewal" alt="License"></a>
-  <a href="https://github.com/cnzakii/e5-renewal"><img src="https://img.shields.io/github/go-mod/go-version/cnzakii/e5-renewal/main?filename=backend/go.mod" alt="Go Version"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/releases"><img src="https://img.shields.io/github/v/release/cnzakii/e5-renewal" alt="Release"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/actions"><img src="https://img.shields.io/github/actions/workflow/status/cnzakii/e5-renewal/ci.yml?branch=main" alt="Build Status"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/commits"><img src="https://img.shields.io/github/last-commit/cnzakii/e5-renewal" alt="Last Commit"></a>
-</p>
+[![CI](https://github.com/cnzakii/e5-renewal/actions/workflows/ci.yml/badge.svg)](https://github.com/cnzakii/e5-renewal/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<p align="center">
-  <a href="README_EN.md">English</a>
-</p>
+A self-hosted tool for connecting Microsoft accounts, scheduling read-only Graph
+requests, and checking their results from a browser.
 
----
+- Connect through Microsoft sign-in or application credentials.
+- Set execution intervals, view account activity, and inspect failed requests.
+- Run with Docker or one executable, with SQLite included.
+- Chinese and English, light and dark themes.
+- Optional PostgreSQL or MySQL storage.
 
-## 功能特性
+Successful Graph requests do not guarantee Microsoft subscription renewal.
 
-- **自动调度** — 可配置的随机间隔 Graph API 调用，支持仿真时间模式
-- **多账户管理** — 支持多个 E5 账户独立调度
-- **OAuth 2.0** — 内置授权码流程，方便获取令牌
-- **健康监控** — 每账户健康评分，失败率超阈值自动暂停
-- **推送通知** — 授权过期、任务失败、健康度低时通过 [Shoutrrr](https://containrrr.dev/shoutrrr/) 发送通知
-- **仪表盘** — 可视化概览，包含趋势图表和执行日志
-- **双语界面** — 支持中文和英文
-- **极致轻量** — 前端嵌入 Go 二进制，单个 Docker 镜像（~30MB），运行内存仅 ~27MB
+## Run with Docker
 
-## 界面预览
-
-<p align="center">
-  <img src="docs/images/dashboard.png" width="800" alt="仪表盘">
-</p>
-<p align="center">
-  <img src="docs/images/accounts.png" width="800" alt="账户管理">
-</p>
-
-## 架构
-
-<p align="center">
-  <img src="docs/images/architecture_zh.svg" width="800" alt="架构图">
-</p>
-
-## 快速开始
-
-### 前置步骤
-
-需要先注册 Azure 应用，详细步骤请参考[这篇教程](https://ednovas.xyz/2022/01/10/e5renewplus/#1-%E6%B3%A8%E5%86%8CAzure%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F)。
-
-### Docker 部署
-
-```bash
-docker run -d \
-  --name e5-renewal \
-  -p 8080:8080 \
-  -v ./data:/app/data \
-  -e E5_JWT_SECRET=$(openssl rand -hex 32) \
-  -e E5_ENCRYPTION_KEY=$(openssl rand -hex 16) \
+```console
+docker run -d --name e5-renewal \
+  --restart unless-stopped \
+  -p 127.0.0.1:8080:8080 \
+  -v e5-data:/data \
+  -e E5_PUBLIC_URL=http://localhost:8080 \
   ghcr.io/cnzakii/e5-renewal:latest
 ```
 
-首次启动时，登录密钥会自动生成并打印在日志中：
+This command allows local access on the Docker host. Open
+`http://localhost:8080` there. First startup initializes the database and prints
+an administrator password once:
 
-```bash
+```console
 docker logs e5-renewal
-# 查找: login key generated  key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
-## 配置说明
+Change it after signing in. You can instead supply `E5_INITIAL_PASSWORD` on
+first startup; supplied passwords are not printed. Restarts preserve the password.
 
-支持环境变量或 YAML 配置文件，环境变量优先级更高。
+For Compose, clone this repository, set `E5_PUBLIC_URL` in `.env`, and run
+`docker compose up -d`. To build this checkout locally, run
+`docker build -t e5-renewal .` and use `e5-renewal` in the command above.
 
-配置文件查找顺序：`E5_CONFIG` 环境变量 → 工作目录下的 `config.yaml` / `config.yml` / `config.json`。模板参考 [`e5-renewal.yaml.example`](e5-renewal.yaml.example)。
+Set `E5_PUBLIC_URL` to the full HTTP or HTTPS address people use in their browser,
+including any port, for example `https://e5.example.com`. Behind a reverse proxy,
+forward traffic to the container's HTTP port. For direct network access, publish
+`8080:8080` instead of the loopback mapping.
 
-| 变量 | 必填 | 默认值 | 说明 |
-|------|------|--------|------|
-| `E5_CONFIG` | 否 | 自动检测 | 配置文件路径（如 `/data/config.yaml`） |
-| `E5_JWT_SECRET` | 是 | — | JWT 签名密钥（建议使用 64 位随机十六进制字符串） |
-| `E5_ENCRYPTION_KEY` | 是 | — | AES 加密密钥，用于加密存储的敏感信息（设置后不可更改） |
-| `E5_LOGIN_KEY` | 否 | 自动生成 | 管理员登录密码 |
-| `E5_DB_PATH` | 否 | `data/e5.db` | SQLite 数据库文件路径 |
-| `E5_PATH_PREFIX` | 否 | — | URL 路径前缀（如 `/myapp`） |
-| `E5_PORT` | 否 | `8080` | 监听端口 |
-| `E5_TLS_CERT` | 否 | — | TLS 证书文件路径 |
-| `E5_TLS_KEY` | 否 | — | TLS 私钥文件路径 |
+To use a subpath, set `E5_PUBLIC_URL=https://e5.example.com/tools/e5` and restart.
+Open `https://e5.example.com/tools/e5/login`; pages, assets, APIs, session cookies,
+and OAuth callbacks follow that prefix. The same executable and image work at
+the domain root or under a prefix. Forward the complete path through your reverse
+proxy; do not strip or rewrite the prefix there. Without a path in `E5_PUBLIC_URL`,
+the application runs at the domain root.
 
-## Docker Compose
+Use plain path segments such as `/e5` or `/tools/e5`. Trailing slashes are
+normalized; percent-encoded segments, dot segments, backslashes, semicolons, and
+duplicate interior slashes are rejected. With a prefix, URLs outside it return
+404, including the root `/api` and `/healthz`; use `/tools/e5/healthz` instead.
+After changing the prefix, update the Web redirect URI in Entra to the callback
+address shown in **Settings**, then authorize again if an authorization was in progress.
 
-```yaml
-services:
-  e5-renewal:
-    image: ghcr.io/cnzakii/e5-renewal:latest
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/app/data
-    env_file:
-      - .env
+For browser authorization, Microsoft accepts HTTP callbacks on `localhost`;
+use HTTPS for a remote callback. See Microsoft's
+[redirect URI requirements](https://learn.microsoft.com/en-us/entra/identity-platform/reply-url).
+
+The container runs as UID/GID `65532`; bind-mounted directories must be writable
+by that user. Run one application instance per database.
+
+## Run a native executable
+
+Download the archive matching your system from
+[Releases](https://github.com/cnzakii/e5-renewal/releases):
+
+| System | Archive |
+| --- | --- |
+| Linux x86-64 | `e5-renewal-linux-amd64.tar.gz` |
+| Linux ARM64 | `e5-renewal-linux-arm64.tar.gz` |
+| macOS Intel | `e5-renewal-darwin-amd64.tar.gz` |
+| macOS Apple Silicon | `e5-renewal-darwin-arm64.tar.gz` |
+
+Extract the archive and run:
+
+```console
+E5_PUBLIC_URL=http://localhost:8080 ./e5-renewal
 ```
 
-## 开发
+Open `http://localhost:8080` on the same machine and sign in with the password
+printed in the terminal.
 
-**前置要求：** Go 1.26+、Node.js 22+
+By default, data is saved in `./data` relative to your working directory. Keep
+using that directory, or set `E5_DATA_DIR` to a persistent absolute path. For
+access from another machine, set `E5_LISTEN=0.0.0.0:8080` and `E5_PUBLIC_URL` to
+the address you will open in your browser.
 
-```bash
-# 后端
-cd backend
-go test -race ./...
-golangci-lint run
+## Connect Microsoft accounts
 
-# 前端
-cd frontend
-npm ci
-npm run dev
-npx vitest run
+Choose **delegated authorization** to sign in an account and read its mail,
+OneDrive, calendars, and contacts. Choose **application authorization** for
+directory and SharePoint reads using administrator-approved tenant permissions.
 
-# 构建 Docker 镜像
-docker build -t e5-renewal:latest .
+1. In [Microsoft Entra](https://entra.microsoft.com), open **App registrations**
+   and register an application for the accounts you intend to connect.
+2. From its **Overview**, copy **Application (client) ID** and
+   **Directory (tenant) ID**. For a single-tenant application, use this tenant ID
+   in E5 Renewal instead of the default `common`.
+3. Under **Certificates & secrets**, create a client secret. Copy its **Value**
+   immediately; **Secret ID** is a different field.
+4. Under **API permissions → Add a permission → Microsoft Graph**, select the
+   matching delegated or application permissions listed below. Application
+   permissions require **Grant admin consent**.
+5. In E5 Renewal, add an account with those IDs and the secret value. For browser
+   authorization, copy the callback address from **Settings**, register it as a
+   **Web** redirect URI in Entra, then select **Save and authorize**.
+6. Sign in to Microsoft and approve the permissions. After returning, select
+   **Run now** and inspect the result. Then edit the account to enable automatic
+   execution. Application authorization skips browser sign-in.
+
+| Authorization | Required Microsoft Graph permissions |
+| --- | --- |
+| Delegated | `User.Read`, `Files.Read`, `Mail.Read`, `Calendars.Read`, `Contacts.Read`, plus `offline_access` |
+| Application | `User.Read.All`, `Organization.Read.All`, `Sites.Read.All` |
+
+The shared interface pool covers profile, OneDrive, mail, calendars, contacts,
+directory, licensing, and SharePoint reads: 14 delegated and 10 application
+interfaces. Each run samples between one and all matching interfaces and shuffles
+their order. Microsoft services must be provisioned and the required permissions
+consented to. Imported tokens must cover those permissions.
+
+For manual callback, enter a registered Web redirect URI, open the generated
+sign-in link, then paste the full returned address containing `code` and `state`.
+Credentials and token exchange stay in the backend. Stored secrets are never
+returned by the management API. Changing delegated credentials requires authorization again.
+
+## Scheduling and history
+
+Set minimum and maximum intervals in minutes. The next interval is chosen at
+random after each run finishes; equal values give a fixed interval. Manual and
+automatic runs share one execution slot. Overdue accounts run once after restart.
+An invalid Microsoft grant disables automatic execution. Reauthorize the account,
+test **Run now**, then select **Edit → Enable automatic execution → Save account**
+to resume its schedule.
+
+History is kept for 30 days and cleaned daily. Filter by account, result, trigger,
+and time range. Charts and date filters use the browser's system time zone.
+Each Graph call records its interface, time, duration, HTTP status, attempts, and
+error code. Response bodies are discarded. Token failures are shown separately
+and do not count as Graph calls.
+
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `E5_LISTEN` | `127.0.0.1:8080` | Listen address; Docker uses `0.0.0.0:8080` |
+| `E5_PUBLIC_URL` | `http://127.0.0.1:8080` | Browser-facing HTTP or HTTPS URL, with an optional path prefix |
+| `E5_DATA_DIR` | `data` | Data directory; `/data` in Docker |
+| `E5_DB_DRIVER` | `sqlite` | `sqlite`, `postgres`, or `mysql` |
+| `E5_DB_DSN` | `<data directory>/e5.db` | SQLite filename or external database connection string |
+| `E5_INITIAL_PASSWORD` | generated | Administrator password on first initialization |
+| `E5_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARN`, or `ERROR` |
+| `E5_LOG_FORMAT` | `text` | Structured `text` or `json` logs |
+| `E5_LOG_FILE` | unset | Optional additional rotating log file |
+
+External databases must already exist; startup creates tables and indexes.
+Use a dedicated database account with schema-management permissions. Example DSNs:
+
+```text
+host=db.example.com user=e5 password=REPLACE_ME dbname=e5 sslmode=require
+e5:REPLACE_ME@tcp(db.example.com:3306)/e5?charset=utf8mb4&parseTime=true&loc=UTC&tls=true
 ```
 
-## 许可证
+Administrator passwords are hashed with Argon2id. Microsoft credentials are
+stored without field encryption, so protect the database and its backups.
+Changing database configuration does not move existing data.
 
-[MIT](LICENSE)
+## Password recovery
+
+Stop the application, run `--reset-password` with the same database configuration,
+then start it again. For Compose:
+
+```console
+docker compose stop e5-renewal
+docker compose run --rm --no-deps e5-renewal --reset-password
+docker compose up -d e5-renewal
+```
+
+For the container created above:
+
+```console
+docker stop e5-renewal
+docker run --rm --volumes-from e5-renewal "$(docker inspect --format '{{.Image}}' e5-renewal)" --reset-password
+docker start e5-renewal
+```
+
+The reset command reuses the installed image. If you configured an external
+database or a custom data path with environment variables, pass those same
+variables to `docker run`; `--volumes-from` only shares mounted storage.
+
+For a native installation, run `./e5-renewal --reset-password` while the server
+is stopped. The new password is printed once. Accounts and history remain intact.
+Web password changes revoke existing sessions immediately; restarting also ends
+browser sessions.
+
+## Logs
+
+Logs go to stdout by default. Use `docker logs e5-renewal` or your service journal.
+Set `E5_LOG_FORMAT=json` for a log collector. Set `E5_LOG_FILE=/data/e5-renewal.log`
+to also save logs, rotating at 10 MiB with three backups.
+
+Generated password notices go only to the console, but Docker, service journals,
+and shell redirection can retain console output. Requests include `X-Request-ID`
+for matching API errors with logs. Credentials, request bodies, and OAuth query
+strings are excluded from application logs.
+
+## Development and contributions
+
+Install Go 1.26+, Bun 1.4.3, and golangci-lint 2.14.0. CI, Docker, and native
+release packaging use the build toolchain recorded in `go.mod`.
+
+```console
+cd frontend && bun install --frozen-lockfile && cd ..
+make fmt
+make check
+make build
+./bin/e5-renewal
+```
+
+`make check` runs Go formatting/static analysis, race-enabled tests, Prettier,
+ESLint, frontend behavior tests, TypeScript checking, and a production UI build.
+`make fmt` also applies Go block-spacing rules and explicit frontend branch braces.
+`make bench` runs API benchmarks; `make fuzz` checks account-input invariants.
+Use `GOLANGCI_LINT=/path/to/golangci-lint` if needed.
+
+For hot reload, start the backend with `E5_PUBLIC_URL=http://localhost:5173`,
+then run `cd frontend && bun run dev`. Register that development callback in Entra.
+Tests use simulated Microsoft responses. External database tests use dedicated
+`E5_TEST_POSTGRES_DSN` and `E5_TEST_MYSQL_DSN` databases; CI provides disposable services.
+
+Issues and pull requests are welcome. Describe the behavior being changed and
+include a focused regression test for bug fixes. Keep Go diagnostics and comments
+in English, UI copy in both translation catalogs, and credentials in the backend.
+
+## Releases
+
+PRs and changes to `main` run checks, verify native macOS builds and tests, and
+build Linux `amd64`/`arm64` container images.
+Monthly Dependabot updates cover Go, Bun, Docker, and GitHub Actions.
+
+CI also packages all four native targets and starts the container with fresh
+storage, checking the embedded UI, sign-in, persistence across restarts, and
+graceful shutdown. Install [GoReleaser](https://goreleaser.com/install/), then run
+`make dist VERSION=v1.2.3` to build the archives locally without publishing.
+`scripts/container-smoke.sh IMAGE [BASE_PATH]` checks a local container image using
+Python 3, including authentication, execution failures, and persistent history.
+
+Pushing a version tag such as `v1.2.3` runs the checks, publishes
+`ghcr.io/cnzakii/e5-renewal:1.2.3`, and prepares a draft GitHub release with Linux
+and macOS archives with SHA-256 checksums. Review the draft before publishing it.
+Publishing the current stable release promotes its existing image to `latest`;
+prereleases such as `v1.2.3-rc.1` do not. Published releases cannot be overwritten
+by rerunning the workflow; fixes need a new version tag.
+
+## Acknowledgements
+
+Thanks to [Beszel](https://github.com/henrygd/beszel) for the UI inspiration.
+
+## License
+
+[MIT](LICENSE).

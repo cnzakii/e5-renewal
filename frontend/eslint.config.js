@@ -1,33 +1,30 @@
-import pluginVue from 'eslint-plugin-vue'
 import tseslint from 'typescript-eslint'
+import hooks from 'eslint-plugin-react-hooks'
 
 export default [
-  { ignores: ['dist/', 'coverage/'] },
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  { ignores: ['dist/', 'node_modules/'] },
+  ...tseslint.configs.recommendedTypeChecked.map((config) => ({
+    ...config,
+    files: ['src/**/*.{ts,tsx}'],
+  })),
   {
-    files: ['**/*.vue'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
-      parserOptions: { parser: tseslint.parser },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    plugins: { 'react-hooks': hooks },
+    rules: {
+      curly: ['error', 'all'],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
   {
-    rules: {
-      // Disable rules that conflict with project style
-      'vue/multi-word-component-names': 'off',
-      'vue/max-attributes-per-line': 'off',
-      'vue/singleline-html-element-content-newline': 'off',
-      'vue/html-self-closing': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    },
-  },
-  // Relax rules for test files
-  {
-    files: ['src/__tests__/**'],
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
+    files: ['src/**/*.test.{ts,tsx}'],
+    // Fetch fakes resolve without I/O; dummy awaits would hide their intent.
+    rules: { '@typescript-eslint/require-await': 'off' },
   },
 ]

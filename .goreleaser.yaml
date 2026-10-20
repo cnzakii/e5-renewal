@@ -1,0 +1,41 @@
+version: 2
+
+project_name: e5-renewal
+
+builds:
+  - main: ./cmd/e5-renewal
+    binary: e5-renewal
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags:
+      - -s -w -X main.version={{ .Env.BUILD_VERSION }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "e5-renewal-{{ .Os }}-{{ .Arch }}"
+    builds_info:
+      owner: root
+      group: root
+      mtime: "{{ .CommitDate }}"
+      mode: 0755
+    files:
+      - src: README.md
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+          mode: 0644
+      - src: LICENSE
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+          mode: 0644
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true

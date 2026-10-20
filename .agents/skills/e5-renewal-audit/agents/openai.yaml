@@ -1,0 +1,4 @@
+interface:
+  display_name: "E5 Renewal Audit"
+  short_description: "Review E5 Renewal for evidence-backed defects"
+  default_prompt: "Use $e5-renewal-audit to review the current E5 Renewal changes for defects and unnecessary complexity."

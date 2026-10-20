@@ -1,0 +1,39 @@
+version: "2"
+run:
+  timeout: 3m
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - errorlint
+    - exhaustive
+    - govet
+    - ineffassign
+    - loggercheck
+    - nolintlint
+    - staticcheck
+    - unconvert
+    - unused
+    - wsl_v5
+  settings:
+    wsl_v5:
+      default: none
+      enable:
+        - after-block
+        - decl
+        - return
+      branch-max-lines: 4
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+  exclusions:
+    presets: []
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - golines
+  settings:
+    golines:
+      max-len: 120

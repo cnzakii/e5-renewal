@@ -1,0 +1,4 @@
+interface:
+  display_name: "E5 Renewal Implementation"
+  short_description: "Implement focused E5 Renewal changes safely"
+  default_prompt: "Use $e5-renewal-implementation to implement this E5 Renewal change and verify it."

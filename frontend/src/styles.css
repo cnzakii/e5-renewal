@@ -1,0 +1,229 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: hsl(30 8% 98%);
+  --foreground: hsl(30 0% 10%);
+  --card: hsl(30 0% 100%);
+  --card-foreground: hsl(240 6% 12%);
+  --popover: hsl(30 0% 100%);
+  --popover-foreground: hsl(240 10% 6.2%);
+  --primary: hsl(240 5.88% 10%);
+  --primary-foreground: hsl(30 0% 100%);
+  --secondary: hsl(240 4.76% 95.88%);
+  --secondary-foreground: hsl(240 5.88% 10%);
+  --muted: hsl(26 6% 94%);
+  --muted-foreground: hsl(24 2.79% 35.1%);
+  --accent: hsl(20 23.08% 94%);
+  --accent-foreground: hsl(240 5.88% 10%);
+  --destructive: hsl(0 66% 53%);
+  --destructive-foreground: hsl(0 0% 97%);
+  --border: hsl(30 8.11% 85.49%);
+  --input: hsl(30 4.29% 72.55%);
+  --ring: hsl(30 3.97% 49.41%);
+  --radius: 0.8rem;
+  --table-header: hsl(225, 6%, 97%);
+  --container: 1600px;
+  --chart-1: hsl(220 70% 50%);
+  --chart-2: hsl(160 60% 45%);
+  --chart-3: hsl(30 80% 55%);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: hsl(220 5.5% 9%);
+  --foreground: hsl(220 2% 97%);
+  --card: hsl(220 5.5% 10.5%);
+  --card-foreground: hsl(220 2% 97%);
+  --popover: hsl(220 5.5% 9%);
+  --popover-foreground: hsl(220 2% 97%);
+  --primary: hsl(220 2% 96%);
+  --primary-foreground: hsl(220 4% 10%);
+  --secondary: hsl(220 4% 16%);
+  --secondary-foreground: hsl(220 0% 98%);
+  --muted: hsl(220 6% 16%);
+  --muted-foreground: hsl(220 4% 67%);
+  --accent: hsl(220 5% 15.5%);
+  --accent-foreground: hsl(220 2% 98%);
+  --destructive: hsl(0 62% 46%);
+  --border: hsl(220 3% 17%);
+  --input: hsl(220 4% 22%);
+  --ring: hsl(220 4% 80%);
+  --table-header: hsl(220, 6%, 13%);
+  --radius: 0.8rem;
+}
+
+@theme inline {
+  --font-sans:
+    InterVariable, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+
+  --breakpoint-xs: 26.6rem;
+  --breakpoint-450: 28rem;
+  --breakpoint-md-lg: 53rem;
+  --breakpoint-2xl: 90rem;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-green-50: hsl(140 60% 95%);
+  --color-green-100: hsl(140 50% 90%);
+  --color-green-200: hsl(140 49% 80%);
+  --color-green-300: hsl(140 48% 70%);
+  --color-green-400: hsl(140 49% 60%);
+  --color-green-500: hsl(140 50% 48%);
+  --color-green-600: hsl(140 52% 38%);
+  --color-green-700: hsl(140 53% 29%);
+  --color-green-800: hsl(140 54% 20%);
+  --color-green-900: hsl(140 54% 12%);
+  --color-green-950: hsl(140 57% 6%);
+
+  --color-gh-dark: #22272e;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-table-header: var(--table-header);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+}
+
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./assets/InterVariable.woff2') format('woff2');
+}
+
+[data-sonner-toaster].app-toaster[data-sonner-theme] {
+  font-family: var(--font-sans);
+  --border-radius: var(--radius);
+  --normal-bg: var(--card);
+  --normal-text: var(--foreground);
+  --normal-border: var(--border);
+  --info-bg: var(--card);
+  --info-text: var(--foreground);
+  --info-border: var(--border);
+  --success-text: var(--color-green-800);
+  --error-text: color-mix(in srgb, var(--destructive) 85%, var(--foreground));
+  --warning-text: color-mix(in srgb, var(--chart-3) 50%, var(--foreground));
+}
+
+[data-sonner-toaster].app-toaster[data-sonner-theme='dark'] {
+  --success-text: var(--color-green-200);
+  --error-text: color-mix(in srgb, var(--destructive) 25%, var(--foreground));
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast][data-styled='true'] {
+  padding-inline-end: 48px;
+}
+
+[data-sonner-toaster].app-toaster [data-sonner-toast] [data-close-button] {
+  top: 50%;
+  left: auto;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: calc(var(--radius) - 4px);
+}
+
+[data-sonner-toaster].app-toaster
+  [data-sonner-toast][data-styled='true']:hover
+  [data-close-button]:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+[data-sonner-toaster].app-toaster [data-close-button]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    overflow-anchor: none;
+  }
+
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  @supports (scrollbar-gutter: stable) {
+    /* Radix scroll lock adds this margin even though the viewport keeps its gutter. */
+    html body[data-scroll-locked] {
+      margin-right: 0 !important;
+    }
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-variant-ligatures: no-contextual;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  /* cosmetic patch for half pixel gap in table headers when scrolling content shows at top  */
+  thead.sticky:before {
+    content: '';
+    @apply absolute -top-2 left-0 w-full h-4 bg-table-header z-50;
+  }
+}
+
+@utility container {
+  max-width: var(--container);
+  @apply mx-auto px-4;
+}
+
+@utility text-card-title {
+  @apply text-xl sm:text-[1.375rem];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--input) transparent;
+  }
+  input[type='number'] {
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}

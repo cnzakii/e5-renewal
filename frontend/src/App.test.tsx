@@ -668,9 +668,11 @@ it('keeps a saved account draft when authorization fails and retries without dup
   const user = userEvent.setup()
   render(<App />)
   await user.click(await screen.findByRole('button', { name: '添加账户' }))
-  await user.type(screen.getByLabelText('账户名称'), 'Draft account')
-  await user.type(screen.getByLabelText('Client ID'), account.client_id)
-  await user.type(screen.getByLabelText('Client Secret'), 'fixture-only-secret')
+  await user.type(await screen.findByLabelText('账户名称'), 'Draft account')
+  await user.click(screen.getByLabelText('Client ID'))
+  await user.paste(account.client_id)
+  await user.click(screen.getByLabelText('Client Secret'))
+  await user.paste('fixture-only-secret')
   await user.click(screen.getByRole('button', { name: '保存并授权' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('数据操作失败')
   await user.click(screen.getByRole('button', { name: '保存并授权' }))
@@ -717,22 +719,22 @@ it('completes a manual callback without receiving tokens in the browser', async 
   const user = userEvent.setup()
   render(<App />)
   await user.click(await screen.findByRole('button', { name: '添加账户' }))
-  await user.type(screen.getByLabelText('账户名称'), 'Manual account')
-  await user.type(screen.getByLabelText('Client ID'), account.client_id)
-  await user.type(screen.getByLabelText('Client Secret'), 'fixture-only-secret')
+  await user.type(await screen.findByLabelText('账户名称'), 'Manual account')
+  await user.click(screen.getByLabelText('Client ID'))
+  await user.paste(account.client_id)
+  await user.click(screen.getByLabelText('Client Secret'))
+  await user.paste('fixture-only-secret')
   await user.click(screen.getByRole('combobox', { name: '获取令牌的方式' }))
   await user.click(screen.getByRole('option', { name: '手动粘贴回调地址' }))
-  await user.type(
-    screen.getByLabelText('Redirect URI'),
-    'https://callback.example.com/return',
-  )
+  await user.click(await screen.findByLabelText('Redirect URI'))
+  await user.paste('https://callback.example.com/return')
   await user.click(screen.getByRole('button', { name: '保存并获取授权链接' }))
   const openLink = await screen.findByRole('link', {
     name: '打开 Microsoft 登录',
   })
   expect(openLink).toHaveAttribute('target', '_blank')
-  await user.type(
-    screen.getByLabelText('返回的回调地址'),
+  await user.click(screen.getByLabelText('返回的回调地址'))
+  await user.paste(
     'https://callback.example.com/return?code=fixture-code&state=fixture-state',
   )
   await user.click(screen.getByRole('button', { name: '完成授权' }))
@@ -822,48 +824,71 @@ it('opens request results directly from an account execution count', async () =>
   )
 })
 
-it('keeps the account table bounded while paging and searching all accounts', async () => {
-  authenticated = true
-  window.history.replaceState({}, '', '/accounts')
-  const originalFetch = fetch
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>().mockImplementation((input, options) => {
-      if (requestURL(input) === '/api/accounts') {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              accounts: Array.from({ length: 60 }, (_, index) => ({
-                ...account,
-                id: index + 1,
-                name: `Account ${index + 1}`,
-              })),
-              busy: false,
-            }),
-          ),
-        )
-      }
-      return originalFetch(input, options)
-    }),
-  )
-  const user = userEvent.setup()
-  render(<App />)
-  await screen.findByRole('link', { name: 'Account 1' })
-  // Count hidden rows too so the DOM bound cannot be satisfied with CSS alone.
-  expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(26)
-  expect(
-    screen.queryByRole('link', { name: 'Account 26' }),
-  ).not.toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: '下一页' }))
-  expect(await screen.findByRole('link', { name: 'Account 26' })).toBeVisible()
-  expect(
-    screen.queryByRole('link', { name: 'Account 1' }),
-  ).not.toBeInTheDocument()
-  fireEvent.change(screen.getByRole('textbox', { name: '筛选账户' }), {
-    target: { value: 'Account 58' },
+describe('account list bounds', () => {
+  function renderAccounts(count: number) {
+    authenticated = true
+    window.history.replaceState({}, '', '/accounts')
+    const originalFetch = fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockImplementation((input, options) => {
+        if (requestURL(input) === '/api/accounts') {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                accounts: Array.from({ length: count }, (_, index) => ({
+                  ...account,
+                  id: index + 1,
+                  name: `Account ${index + 1}`,
+                })),
+                busy: false,
+              }),
+            ),
+          )
+        }
+        return originalFetch(input, options)
+      }),
+    )
+    render(<App />)
+  }
+
+  it('keeps the table bounded while paging', async () => {
+    const user = userEvent.setup()
+    renderAccounts(26)
+    await screen.findByRole('link', { name: 'Account 1' })
+    const table = screen.getByRole('table')
+    // Count hidden rows too so the DOM bound cannot be satisfied with CSS alone.
+    expect(within(table).getAllByRole('row', { hidden: true })).toHaveLength(26)
+    expect(
+      within(table).queryByRole('link', { name: 'Account 26' }),
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '下一页' }))
+    expect(
+      await within(table).findByRole('link', { name: 'Account 26' }),
+    ).toBeVisible()
+    expect(within(table).getAllByRole('row', { hidden: true })).toHaveLength(2)
+    expect(
+      within(table).queryByRole('link', { name: 'Account 1' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled()
   })
-  expect(await screen.findByRole('link', { name: 'Account 58' })).toBeVisible()
-  expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(2)
+
+  it('searches accounts outside the rendered page', async () => {
+    const user = userEvent.setup()
+    renderAccounts(60)
+    await screen.findByRole('link', { name: 'Account 1' })
+    const table = screen.getByRole('table')
+    expect(within(table).getAllByRole('row', { hidden: true })).toHaveLength(26)
+    expect(
+      within(table).queryByRole('link', { name: 'Account 58' }),
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('textbox', { name: '筛选账户' }))
+    await user.paste('Account 58')
+    expect(
+      await within(table).findByRole('link', { name: 'Account 58' }),
+    ).toBeVisible()
+    expect(within(table).getAllByRole('row', { hidden: true })).toHaveLength(2)
+  })
 })
 
 it('shows the authorization outcome when entering an already loaded account route', async () => {

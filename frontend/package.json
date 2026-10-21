@@ -14,7 +14,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.2",
     "lucide-react": "^1.58.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",

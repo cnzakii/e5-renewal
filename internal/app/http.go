@@ -25,19 +25,21 @@ import (
 )
 
 type Server struct {
-	db            *gorm.DB
-	runner        *Runner
-	microsoft     *Microsoft
-	config        Config
-	session       *scs.SessionManager
-	loginLimit    *rate.Limiter
-	assets        fs.FS
-	indexHTML     []byte
-	basePath      string
-	baseHref      string
-	origin        string
-	authMu        sync.RWMutex
-	adminRevision uint
+	db             *gorm.DB
+	runner         *Runner
+	microsoft      *Microsoft
+	config         Config
+	session        *scs.SessionManager
+	loginLimits    *loginLimiter
+	passwordLimit  *rate.Limiter
+	passwordChecks chan struct{}
+	assets         fs.FS
+	indexHTML      []byte
+	basePath       string
+	baseHref       string
+	origin         string
+	authMu         sync.RWMutex
+	adminRevision  uint
 }
 
 // NewServer binds sessions and frontend assets to the configured public URL.
@@ -82,18 +84,20 @@ func NewServer(c Config, db *gorm.DB, runner *Runner, microsoft *Microsoft, asse
 	session.Cookie.Persist = false
 
 	return &Server{
-		config:        c,
-		db:            db,
-		runner:        runner,
-		microsoft:     microsoft,
-		assets:        assets,
-		indexHTML:     index,
-		basePath:      publicURL.Path,
-		baseHref:      baseHref,
-		origin:        publicURL.Scheme + "://" + publicURL.Host,
-		session:       session,
-		loginLimit:    rate.NewLimiter(rate.Every(12*time.Second), 5),
-		adminRevision: admin.Revision,
+		config:         c,
+		db:             db,
+		runner:         runner,
+		microsoft:      microsoft,
+		assets:         assets,
+		indexHTML:      index,
+		basePath:       publicURL.Path,
+		baseHref:       baseHref,
+		origin:         publicURL.Scheme + "://" + publicURL.Host,
+		session:        session,
+		loginLimits:    newLoginLimiter(),
+		passwordLimit:  rate.NewLimiter(rate.Every(12*time.Second), 5),
+		passwordChecks: make(chan struct{}, 2),
+		adminRevision:  admin.Revision,
 	}, nil
 }
 
@@ -328,12 +332,6 @@ func (s *Server) sessionInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
-	if !s.loginLimit.Allow() {
-		w.Header().Set("Retry-After", "12")
-		fail(w, 429, newError("login_rate_limited", "Too many login attempts. Try again shortly."))
-		return
-	}
-
 	var input struct {
 		Password string `json:"password"`
 	}
@@ -345,6 +343,18 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, newError("password_incorrect", "Incorrect administrator password."))
 		return
 	}
+
+	if !s.loginLimits.allow(s.clientIP(r), time.Now()) {
+		w.Header().Set("Retry-After", "12")
+		fail(w, 429, newError("login_rate_limited", "Too many login attempts. Try again shortly."))
+		return
+	}
+
+	if !s.beginPasswordCheck(w) {
+		return
+	}
+
+	defer func() { <-s.passwordChecks }()
 
 	var admin Admin
 	if err := s.db.WithContext(r.Context()).First(&admin, 1).Error; err != nil {
@@ -391,7 +401,8 @@ func (s *Server) password(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.loginLimit.Allow() {
+	if !s.passwordLimit.Allow() {
+		w.Header().Set("Retry-After", "12")
 		fail(w, 429, newError("rate_limited", "Too many requests."))
 		return
 	}
@@ -400,6 +411,12 @@ func (s *Server) password(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, newError("current_password_incorrect", "Incorrect current password."))
 		return
 	}
+
+	if !s.beginPasswordCheck(w) {
+		return
+	}
+
+	defer func() { <-s.passwordChecks }()
 
 	var admin Admin
 	if err := s.db.WithContext(r.Context()).First(&admin, 1).Error; err != nil {

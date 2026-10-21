@@ -8,6 +8,7 @@ services:
       - data:/data
     environment:
       E5_PUBLIC_URL: ${E5_PUBLIC_URL:-http://localhost:8080}
+      E5_TRUSTED_PROXIES: ${E5_TRUSTED_PROXIES:-}
       E5_LOG_LEVEL: ${E5_LOG_LEVEL:-INFO}
       E5_LOG_FORMAT: ${E5_LOG_FORMAT:-text}
       E5_LOG_FILE: ${E5_LOG_FILE:-}

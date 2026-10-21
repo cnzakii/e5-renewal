@@ -2,7 +2,7 @@ module github.com/cnzakii/e5-renewal
 
 go 1.26.0
 
-toolchain go1.26.10
+toolchain go1.27.3
 
 require (
 	github.com/alexedwards/argon2id v1.0.0

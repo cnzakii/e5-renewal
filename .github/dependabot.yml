@@ -9,6 +9,13 @@ updates:
     directory: "/frontend"
     schedule:
       interval: monthly
+    ignore:
+      # Remove when typescript-eslint supports the TypeScript 7 compiler API.
+      - dependency-name: typescript
+        versions: ["7.x"]
+      # Vitest 5.0.5 cannot start its jsdom environment with this release.
+      - dependency-name: jsdom
+        versions: ["30.1.3"]
 
   - package-ecosystem: docker
     directory: "/"

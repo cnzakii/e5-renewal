@@ -204,7 +204,7 @@ describe('management interface', () => {
     )
     await user.click(screen.getByRole('button', { name: '登录' }))
     await screen.findByRole('heading', { name: '账户' })
-    expect(screen.getByText('Example account')).toBeVisible()
+    expect(await screen.findByText('Example account')).toBeVisible()
     await user.click(screen.getByRole('button', { name: '导航菜单' }))
     await user.click(screen.getByRole('menuitem', { name: /^切换语言/ }))
     expect(
@@ -849,21 +849,21 @@ it('keeps the account table bounded while paging and searching all accounts', as
   const user = userEvent.setup()
   render(<App />)
   await screen.findByRole('link', { name: 'Account 1' })
-  expect(screen.getAllByRole('row')).toHaveLength(26)
+  // Count hidden rows too so the DOM bound cannot be satisfied with CSS alone.
+  expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(26)
   expect(
     screen.queryByRole('link', { name: 'Account 26' }),
   ).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: '下一页' }))
-  expect(screen.getByRole('link', { name: 'Account 26' })).toBeVisible()
+  expect(await screen.findByRole('link', { name: 'Account 26' })).toBeVisible()
   expect(
     screen.queryByRole('link', { name: 'Account 1' }),
   ).not.toBeInTheDocument()
-  await user.type(
-    screen.getByRole('textbox', { name: '筛选账户' }),
-    'Account 58',
-  )
-  expect(screen.getByRole('link', { name: 'Account 58' })).toBeVisible()
-  expect(screen.getAllByRole('row')).toHaveLength(2)
+  fireEvent.change(screen.getByRole('textbox', { name: '筛选账户' }), {
+    target: { value: 'Account 58' },
+  })
+  expect(await screen.findByRole('link', { name: 'Account 58' })).toBeVisible()
+  expect(screen.getAllByRole('row', { hidden: true })).toHaveLength(2)
 })
 
 it('shows the authorization outcome when entering an already loaded account route', async () => {

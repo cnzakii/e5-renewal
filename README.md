@@ -45,6 +45,14 @@ including any port, for example `https://e5.example.com`. Behind a reverse proxy
 forward traffic to the container's HTTP port. For direct network access, publish
 `8080:8080` instead of the loopback mapping.
 
+Behind a reverse proxy, set `E5_TRUSTED_PROXIES` to its source IP address as seen
+by the application, or its dedicated CIDR range. For example, a native process
+behind a local proxy can use `127.0.0.1,::1`; Docker may use a bridge gateway
+address instead. The proxy must set or append the actual client IP in
+`X-Forwarded-For`. Only explicitly trusted proxies can supply client addresses
+for login limits; otherwise the connection's source IP is used. Trust only your
+proxy addresses, since trusting arbitrary clients lets them bypass these limits.
+
 To use a subpath, set `E5_PUBLIC_URL=https://e5.example.com/tools/e5` and restart.
 Open `https://e5.example.com/tools/e5/login`; pages, assets, APIs, session cookies,
 and OAuth callbacks follow that prefix. The same executable and image work at
@@ -152,6 +160,7 @@ and do not count as Graph calls.
 | --- | --- | --- |
 | `E5_LISTEN` | `127.0.0.1:8080` | Listen address; Docker uses `0.0.0.0:8080` |
 | `E5_PUBLIC_URL` | `http://127.0.0.1:8080` | Browser-facing HTTP or HTTPS URL, with an optional path prefix |
+| `E5_TRUSTED_PROXIES` | unset | Comma-separated proxy IPs or CIDRs trusted to supply `X-Forwarded-For` |
 | `E5_DATA_DIR` | `data` | Data directory; `/data` in Docker |
 | `E5_DB_DRIVER` | `sqlite` | `sqlite`, `postgres`, or `mysql` |
 | `E5_DB_DSN` | `<data directory>/e5.db` | SQLite filename or external database connection string |
@@ -199,6 +208,13 @@ For a native installation, run `./e5-renewal --reset-password` while the server
 is stopped. The new password is printed once. Accounts and history remain intact.
 Web password changes revoke existing sessions immediately; restarting also ends
 browser sessions.
+
+Login limits allow five immediate attempts per source IP, then restore one
+attempt every 12 seconds. Password changes have a separate allowance. Password
+verification is limited to two concurrent requests; excess requests receive
+HTTP 429 with a `Retry-After` header. These limits are held in bounded process
+memory and reset on restart; the administrator password and stored accounts do
+not change. Clients sharing a public IP also share its login allowance.
 
 ## Logs
 

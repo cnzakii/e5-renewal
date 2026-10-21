@@ -114,6 +114,43 @@ beforeEach(async () => {
 })
 
 describe('management interface', () => {
+  it('explains the login limit and allows a later successful retry', async () => {
+    const originalFetch = fetch
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockImplementationOnce(originalFetch)
+        .mockImplementationOnce(() =>
+          Promise.resolve(
+            new Response(JSON.stringify({ code: 'login_rate_limited' }), {
+              status: 429,
+              headers: {
+                'Retry-After': '12',
+                'Content-Type': 'application/json',
+              },
+            }),
+          ),
+        )
+        .mockImplementation(originalFetch),
+    )
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(
+      await screen.findByLabelText('管理密码'),
+      'an-administrator-password',
+    )
+    await user.click(screen.getByRole('button', { name: '登录' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '登录尝试过于频繁，请在 12 秒后重试',
+    )
+    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled()
+    expect(window.location.pathname).toBe('/login')
+
+    await user.click(screen.getByRole('button', { name: '登录' }))
+    await screen.findByRole('heading', { name: '账户' })
+  })
+
   it('keeps login, navigation, reloads, and API requests under a base path', async () => {
     const prefix = '/tools/e5'
     const base = document.createElement('base')

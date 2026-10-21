@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/netip"
 	"net/url"
 	"os"
 	"path"
@@ -15,6 +16,7 @@ import (
 type Config struct {
 	Address         string
 	PublicURL       string
+	TrustedProxies  []netip.Prefix
 	Driver          string
 	DSN             string
 	DataDir         string
@@ -57,6 +59,24 @@ func LoadConfig() (Config, error) {
 	}
 
 	c.PublicURL = u.String()
+	for value := range strings.SplitSeq(os.Getenv("E5_TRUSTED_PROXIES"), ",") {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+
+		prefix, err := netip.ParsePrefix(value)
+		if err != nil {
+			address, addressError := netip.ParseAddr(value)
+			if addressError != nil {
+				return c, errors.New("E5_TRUSTED_PROXIES must contain comma-separated IP addresses or CIDRs")
+			}
+
+			prefix = netip.PrefixFrom(address, address.BitLen())
+		}
+
+		c.TrustedProxies = append(c.TrustedProxies, prefix.Masked())
+	}
 
 	switch c.Driver {
 	case "sqlite":

@@ -229,8 +229,9 @@ strings are excluded from application logs.
 
 ## Development and contributions
 
-Install Go 1.26+, Bun 1.4.3, and golangci-lint 2.14.0. CI, Docker, and native
-release packaging use the build toolchain recorded in `go.mod`.
+Install Go 1.26+, the Bun version pinned in `frontend/.bun-version`, and
+golangci-lint 2.14.0. CI, Docker, and native release packaging use the Go
+toolchain recorded in `go.mod`.
 When updating Go, keep its `toolchain` directive and the pinned Go image in
 `Dockerfile` on the same version.
 
